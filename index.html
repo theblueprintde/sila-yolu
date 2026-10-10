@@ -50,6 +50,9 @@ header.top{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 h1.signboard{background:var(--sign-bg);color:var(--sign-fg);border-radius:10px;padding:12px 22px 10px;outline:2px solid var(--sign-fg);outline-offset:-7px;font-size:clamp(30px,7vw,44px);letter-spacing:.01em;display:flex;align-items:baseline;gap:.35em;flex-wrap:wrap}
 h1.signboard small{font-size:.5em;font-weight:600;opacity:.85;letter-spacing:.04em;text-transform:uppercase}
 #tagline{color:var(--muted);max-width:52ch}
+.toprow{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;width:100%}
+.lang select{height:40px;font-size:15px;width:auto;padding:0 10px;background:var(--surface)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* Adımlar: yol çizgisi üzerinde üç durak */
 ol.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);position:relative}
@@ -178,7 +181,10 @@ footer{font-size:14px;color:var(--muted)}
 
 <div class="wrap">
   <header class="top">
-    <h1 class="signboard">Sıla Yolu <small>Rehberi</small></h1>
+    <div class="toprow">
+      <h1 class="signboard">Sıla Yolu <small>Rehberi</small></h1>
+      <label class="lang" for="langSel"><span class="vh">Dil / Language</span><select id="langSel"></select></label>
+    </div>
     <p id="tagline">Nereden nereye gideceğini yaz. Rotanı, sınır kapılarını, ücretleri ve molaları birlikte planlayalım.</p>
   </header>
 
@@ -646,29 +652,29 @@ const LOCAL = [
 const PUB = {"DE":[["2026-12-25","Noel"],["2026-12-26","Noel'in ikinci günü"],["2027-01-01","Yılbaşı"],["2027-03-26","Kutsal Cuma"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-06","Göğe Yükseliş Günü"],["2027-05-17","Pentekost Pazartesisi"]],"AT":[["2026-10-26","Ulusal Gün"],["2026-11-01","Azizler Günü"],["2026-12-08","Lekesiz Gebelik Günü"],["2026-12-25","Noel"],["2026-12-26","Aziz Stephen Günü"],["2027-01-01","Yılbaşı"],["2027-01-06","Epifani"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-06","Göğe Yükseliş Günü"],["2027-05-17","Pentekost Pazartesisi"],["2027-05-27","Corpus Christi"],["2027-08-15","Meryem'in Göğe Kabulü"]],"SI":[["2026-10-31","Reform Günü"],["2026-11-01","Ölüleri Anma Günü"],["2026-12-25","Noel"],["2026-12-26","Bağımsızlık ve Birlik Günü"],["2027-01-01","Yılbaşı"],["2027-01-02","Yılbaşı"],["2027-02-08","Prešeren Günü (kültür bayramı)"],["2027-03-28","Paskalya"],["2027-03-29","Paskalya Pazartesisi"],["2027-04-27","İşgale Karşı Ayaklanma Günü"],["2027-05-01","İşçi Bayramı"],["2027-05-02","İşçi Bayramı"],["2027-05-16","Pentekost"],["2027-06-25","Devlet Günü"],["2027-08-15","Meryem'in Göğe Kabulü"]],"HR":[["2026-11-01","Azizler Günü"],["2026-11-18","Anma Günü"],["2026-12-25","Noel"],["2026-12-26","Aziz Stephen Günü"],["2027-01-01","Yılbaşı"],["2027-01-06","Epifani"],["2027-03-28","Paskalya"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-27","Corpus Christi"],["2027-05-30","Devlet Günü"],["2027-06-22","Antifaşist Mücadele Günü"],["2027-08-05","Zafer ve Vatan Şükran Günü"],["2027-08-15","Meryem'in Göğe Kabulü"]],"HU":[["2026-10-23","Ulusal Gün"],["2026-11-01","Azizler Günü"],["2026-12-24","Köprü tatili"],["2026-12-25","Noel"],["2026-12-26","Noel'in ikinci günü"],["2027-01-01","Yılbaşı"],["2027-03-15","Ulusal Gün"],["2027-03-26","Kutsal Cuma"],["2027-03-28","Paskalya"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-16","Pentekost"],["2027-05-17","Pentekost Pazartesisi"],["2027-08-20","Devletin Kuruluşu Günü"]],"RS":[["2026-11-11","Ateşkes Günü"],["2027-01-01","Yılbaşı"],["2027-01-02","Yılbaşı"],["2027-01-07","Ortodoks Noeli"],["2027-02-15","Devlet Günü"],["2027-02-16","Devlet Günü"],["2027-04-30","Kutsal Cuma"],["2027-05-01","Kutsal Cumartesi ve İşçi Bayramı"],["2027-05-02","Paskalya ve İşçi Bayramı"],["2027-05-03","Paskalya Pazartesisi"],["2027-05-04","İşçi Bayramı (telafi tatili)"]],"RO":[["2026-11-30","Aziz Andreas Günü"],["2026-12-01","Ulusal Gün"],["2026-12-25","Noel"],["2026-12-26","Noel"],["2027-01-01","Yılbaşı"],["2027-01-02","Yılbaşı"],["2027-01-06","Epifani"],["2027-01-07","Vaftizci Yahya Günü"],["2027-01-24","Romen Prensliklerinin Birleşmesi"],["2027-04-30","Kutsal Cuma"],["2027-05-01","İşçi Bayramı"],["2027-05-02","Paskalya"],["2027-05-03","Paskalya"],["2027-06-01","Çocuk Günü"],["2027-06-20","Pentekost"],["2027-06-21","Pentekost"],["2027-08-15","Meryem'in Göğe Kabulü"]],"BG":[["2026-12-24","Noel Arifesi"],["2026-12-25","Noel"],["2026-12-26","Noel"],["2026-12-28","Noel (telafi tatili)"],["2027-01-01","Yılbaşı"],["2027-03-03","Kurtuluş Günü"],["2027-04-30","Kutsal Cuma"],["2027-05-01","Kutsal Cumartesi ve İşçi Bayramı"],["2027-05-02","Paskalya"],["2027-05-03","Paskalya"],["2027-05-04","İşçi Bayramı (telafi tatili)"],["2027-05-06","Aziz Georgi Günü"],["2027-05-24","Slav Alfabesi ve Kültür Günü"]],"CZ":[["2026-10-28","Çekoslovakya'nın Kuruluşu"],["2026-11-17","Özgürlük ve Demokrasi Günü"],["2026-12-24","Noel Arifesi"],["2026-12-25","Noel"],["2026-12-26","Noel'in ikinci günü"],["2027-01-01","Yılbaşı"],["2027-03-26","Kutsal Cuma"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-08","Zafer Günü"],["2027-07-05","Kiril ve Metodius Günü"],["2027-07-06","Jan Hus Günü"]],"SK":[["2026-11-01","Azizler Günü"],["2026-12-24","Noel Arifesi"],["2026-12-25","Noel"],["2026-12-26","Noel'in ikinci günü"],["2027-01-01","Slovak Cumhuriyeti'nin Kuruluşu"],["2027-01-06","Epifani ve Ortodoks Noeli"],["2027-03-26","Kutsal Cuma"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-08","Faşizme Karşı Zafer Günü"],["2027-07-05","Kiril ve Metodius Günü"],["2027-08-29","Slovak Ulusal Ayaklanması Günü"]],"IT":[["2026-11-01","Azizler Günü"],["2026-12-08","Lekesiz Gebelik Günü"],["2026-12-25","Noel"],["2026-12-26","Aziz Stephen Günü"],["2027-01-01","Yılbaşı"],["2027-01-06","Epifani"],["2027-03-28","Paskalya"],["2027-03-29","Paskalya Pazartesisi"],["2027-04-25","Kurtuluş Günü"],["2027-05-01","İşçi Bayramı"],["2027-06-02","Cumhuriyet Günü"],["2027-08-15","Meryem'in Göğe Kabulü"]],"GR":[["2026-10-28","Ohi Günü"],["2026-12-25","Noel"],["2026-12-26","Meryem Ana Günü"],["2027-01-01","Yılbaşı"],["2027-01-06","Epifani"],["2027-03-15","Temiz Pazartesi"],["2027-03-25","Bağımsızlık Günü"],["2027-04-30","Kutsal Cuma"],["2027-05-01","İşçi Bayramı"],["2027-05-03","Paskalya Pazartesisi"],["2027-05-04","İşçi Bayramı (telafi tatili)"],["2027-06-21","Pentekost Pazartesisi"],["2027-08-15","Meryem'in Göğe Kabulü"]],"TR":[["2026-10-29","Cumhuriyet Bayramı"],["2027-01-01","Yılbaşı"],["2027-03-09","Ramazan Bayramı"],["2027-03-10","Ramazan Bayramı"],["2027-03-11","Ramazan Bayramı"],["2027-04-23","Ulusal Egemenlik ve Çocuk Bayramı"],["2027-05-01","Emek ve Dayanışma Günü"],["2027-05-16","Kurban Bayramı"],["2027-05-17","Kurban Bayramı"],["2027-05-18","Kurban Bayramı"],["2027-05-19","Atatürk'ü Anma, Gençlik ve Spor Bayramı; Kurban Bayramı"],["2027-07-15","Demokrasi ve Millî Birlik Günü"],["2027-08-30","Zafer Bayramı"]]};
 const BIG = /Kuzey Ren|Baden|Bavyera|Hessen|Aşağı Saksonya/;
 const dayDiff = (a,b) => Math.round((new Date(a+"T12:00:00")-new Date(b+"T12:00:00"))/864e5);
-const trDate = s => new Date(s+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"long"});
+const trDate = s => new Date(s+"T12:00:00").toLocaleDateString(LOC(),{day:"numeric",month:"long"});
 // Sınıra varış günü yoğun bir döneme denk geliyor mu? (gurbetçi trafiği: bekleme tahminini artırır)
 function busyAll(dateStr){
   const items=[]; let f=1;
   if(!dateStr) return {f,items};
   if(isBack()){
-    for(const [a,n] of BAYRAM_END){ const d=dayDiff(dateStr,a); if(d>=-1 && d<=5){ items.push(`${n} sonrası: Avrupa'ya dönüş çok yoğun olur.`); f=Math.max(f,1.5); } }
+    for(const [a,n] of BAYRAM_END){ const d=dayDiff(dateStr,a); if(d>=-1 && d<=5){ items.push(t("{name} sonrası: Avrupa'ya dönüş çok yoğun olur.",{name:t(n)})); f=Math.max(f,1.5); } }
     for(const [cc,en,n,reg] of RETURN){ const d=dayDiff(en,dateStr); if(d>=0 && d<=5){
       const big = cc==="DE" && BIG.test(reg), summer = /yaz/.test(n);
       f = Math.max(f, big ? 1.6 : summer ? 1.4 : 1.2);
-      items.push(`${ORIGIN_N[cc]}'da ${n} ${trDate(en)} günü bitiyor (${reg}).`); } }
+      items.push(t("{country}'da {holiday} {date} günü bitiyor ({regions}).",{country:t(ORIGIN_N[cc]),holiday:t(n),date:trDate(en),regions:t(reg)})); } }
     if(items.length>1) f=Math.min(2, f+0.1*(items.length-1));
     return {f,items};
   }
-  for(const [a,n] of BAYRAM){ const d=dayDiff(a,dateStr); if(d>=0 && d<=6){ items.push(`${n} öncesi: Türkiye'ye gidiş çok yoğun olur.`); f=Math.max(f,1.5); } }
+  for(const [a,n] of BAYRAM){ const d=dayDiff(a,dateStr); if(d>=0 && d<=6){ items.push(t("{name} öncesi: Türkiye'ye gidiş çok yoğun olur.",{name:t(n)})); f=Math.max(f,1.5); } }
   for(const [cc,st,n,reg] of ORIGIN){ const d=dayDiff(dateStr,st); if(d>=0 && d<=4){
     const big = cc==="DE" && BIG.test(reg), summer = /yaz/.test(n);
     f = Math.max(f, big ? 1.6 : summer ? 1.4 : 1.2);
-    items.push(`${ORIGIN_N[cc]}'da ${n} ${trDate(st)} günü başlıyor (${reg}).`); } }
+    items.push(t("{country}'da {holiday} {date} günü başlıyor ({regions}).",{country:t(ORIGIN_N[cc]),holiday:t(n),date:trDate(st),regions:t(reg)})); } }
   if(items.length>1) f=Math.min(2, f+0.1*(items.length-1));
   return {f,items};
 }
-function busy(dateStr){ const b=busyAll(dateStr); return b.items.length ? {f:b.f, t:b.items.join(" ")+(isBack()?" Tatilin son günlerinde sınırda uzun kuyruk beklenir.":" İlk günlerde sınırda uzun kuyruk beklenir.")} : null; }
+function busy(dateStr){ const b=busyAll(dateStr); return b.items.length ? {f:b.f, t:b.items.join(" ")+" "+(isBack()?t("Tatilin son günlerinde sınırda uzun kuyruk beklenir."):t("İlk günlerde sınırda uzun kuyruk beklenir."))} : null; }
 // Seçilen rotada, yolculuk günlerine denk gelen resmi ve okul tatilleri
 function routeHolidays(r, dateStr){
   const out=[]; if(!dateStr) return out;
@@ -676,8 +682,8 @@ function routeHolidays(r, dateStr){
   for(const c of cs){
     const back = isBack(), lo = (c==="TR") !== back ? 0 : -2, hi = (c==="TR") !== back ? 2 : 0;
     const ph = (PUB[c]||[]).filter(([dt])=>{ const d=dayDiff(dt,dateStr); return d>=lo && d<=hi; });
-    if(ph.length) out.push({c, kind:"pub", t: ph.map(([dt,n])=>`${trDate(dt)} ${n}`).join(", ")});
-    for(const [cc,st,en,n] of LOCAL){ if(cc!==c) continue; const a=dayDiff(dateStr,st), b=dayDiff(en,dateStr); if(a>=-1 && b>=0) out.push({c, kind:"school", t:`Okullarda ${n} (${trDate(st)} – ${trDate(en)})`}); }
+    if(ph.length) out.push({c, kind:"pub", t: ph.map(([dt,n])=>`${trDate(dt)} ${t(n)}`).join(", ")});
+    for(const [cc,st,en,n] of LOCAL){ if(cc!==c) continue; const a=dayDiff(dateStr,st), b=dayDiff(en,dateStr); if(a>=-1 && b>=0) out.push({c, kind:"school", t:t("Okullarda {holiday} ({from} – {to})",{holiday:t(n),from:trDate(st),to:trDate(en)})}); }
   }
   return out;
 }
@@ -713,12 +719,28 @@ const CHECK = [
   "Türkiye'de HGS etiketi almayı planla",
 ];
 
-document.documentElement.lang = "tr";
 const $ = s => document.querySelector(s);
 const store = {
   get(k,d){ try{ const v = localStorage.getItem("silayolu:"+k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
   set(k,v){ try{ localStorage.setItem("silayolu:"+k, JSON.stringify(v)); }catch(e){} }
 };
+
+const I18N = /*I18N*/{}/*/I18N*/;
+// Diller: kaynak metin Türkçe; I18N[dil][türkçe] = çeviri. {ad} yer tutucuları.
+const LANGS = {tr:"Türkçe",en:"English",de:"Deutsch",fr:"Français",nl:"Nederlands",pl:"Polski"};
+const LOCALES = {tr:"tr-TR",en:"en-GB",de:"de-DE",fr:"fr-FR",nl:"nl-NL",pl:"pl-PL"};
+function detectLang(){ for(const l of (navigator.languages||[navigator.language||"tr"])){ const k=String(l).slice(0,2).toLowerCase(); if(LANGS[k]) return k; } return "tr"; }
+let LANG = store.get("lang", null) || detectLang(); if(!LANGS[LANG]) LANG="tr";
+const LOC = () => LOCALES[LANG];
+function t(s, v){
+  if(s==null || s==="") return s;
+  let o = (LANG!=="tr" && I18N[LANG] && I18N[LANG][s]) || s;
+  if(v) o = o.replace(/\{(\w+)\}/g,(m,k)=> v[k]!=null ? v[k] : m);
+  return o;
+}
+const cn = c => t(C[c].n);
+const fmtEur = v => v.toLocaleString(LOC(),{minimumFractionDigits:2,maximumFractionDigits:2});
+document.documentElement.lang = LANG;
 
 // Kontroller
 // Yön: gidiş (Avrupa → Türkiye) veya dönüş (Türkiye → Avrupa)
@@ -727,8 +749,8 @@ function fillLists(){
   const [fl,tl] = isBack() ? [TO,FROM] : [FROM,TO];
   $("#fromList").replaceChildren(...fl.map(c=>new Option(c.n)));
   $("#toList").replaceChildren(...tl.map(c=>new Option(c.n)));
-  $("#from").placeholder = "Şehir veya adres, ör. "+(isBack()?"Ankara":"Köln");
-  $("#to").placeholder = "Şehir veya adres, ör. "+(isBack()?"Köln":"Ankara");
+  $("#from").placeholder = t("Şehir veya adres, ör. {city}",{city:isBack()?"Ankara":"Köln"});
+  $("#to").placeholder = t("Şehir veya adres, ör. {city}",{city:isBack()?"Köln":"Ankara"});
   document.querySelector(`input[name=dir][value=${isBack()?"back":"go"}]`).checked = true;
 }
 fillLists();
@@ -753,9 +775,10 @@ function places(){
 function hints(){
   const P = places(), fh=$("#fromHint"), th=$("#toHint");
   fh.className="hint "+(P.f?"ok":P.ft?"warn":""); th.className="hint "+(P.t?"ok":P.tt?"warn":"");
-  const [fd,td] = isBack() ? ["İstanbul","Münih"] : ["Münih","İstanbul"];
-  fh.textContent = P.f ? "✓ "+P.f.n : P.ft ? `Listede yok; mesafe ${fd}'dan tahmin edilir` : "";
-  th.textContent = P.t ? "✓ "+P.t.n : P.tt ? `Listede yok; mesafe ${td}'dan tahmin edilir` : "";
+  const fd = t(isBack() ? "Listede yok; mesafe İstanbul'dan tahmin edilir" : "Listede yok; mesafe Münih'ten tahmin edilir");
+  const td = t(isBack() ? "Listede yok; mesafe Münih'ten tahmin edilir" : "Listede yok; mesafe İstanbul'dan tahmin edilir");
+  fh.textContent = P.f ? "✓ "+P.f.n : P.ft ? fd : "";
+  th.textContent = P.t ? "✓ "+P.t.n : P.tt ? td : "";
 }
 
 // Yoğunluk katsayısı (Türkiye yönü)
@@ -783,18 +806,19 @@ function gateWait(id){
   if(v!=null && v!=="") return {m:+v, own:true};
   return {m:estWait(id), own:false};
 }
-const fmtMin = m => m<60 ? m+" dk" : Math.floor(m/60)+" sa"+(m%60?" "+String(m%60).padStart(2,"0")+" dk":"");
+const fmtMin = m => m<60 ? m+" "+t("dk") : Math.floor(m/60)+" "+t("sa")+(m%60?" "+String(m%60).padStart(2,"0")+" "+t("dk"):"");
 const level = m => m<=45?"good":m<=120?"warn":"bad";
-const plate = c => `<span class="plate${C[c].eu?"":" noeu"}" title="${C[c].n}${C[c].eu?"":" – AB roaming yok"}">${C[c].p}</span>`;
-const fmtDT = d => d.toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"})+" "+String(d.getHours()).padStart(2,"0")+":00 civarı";
-const fmtDate = s => { const d=new Date(s+"T12:00:00"); return isNaN(d)?"":d.toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"}); };
-const viaList = r => isBack() ? r.via.slice().reverse().map(v=>v.replace("(feribot) ","")+(v.startsWith("(feribot)")?" (feribot)":"")) : r.via;
+const plate = c => `<span class="plate${C[c].eu?"":" noeu"}" title="${cn(c)}${C[c].eu?"":" – "+t("AB roaming yok")}">${C[c].p}</span>`;
+const fmtDT = d => t("{date} {time} civarı",{date:d.toLocaleDateString(LOC(),{day:"numeric",month:"long",weekday:"long"}), time:String(d.getHours()).padStart(2,"0")+":00"});
+const fmtDate = s => { const d=new Date(s+"T12:00:00"); return isNaN(d)?"":d.toLocaleDateString(LOC(),{day:"numeric",month:"long",weekday:"long"}); };
+const viaName = (v,back) => v.startsWith("(feribot) ") ? (back ? t(v.slice(10))+" ("+t("feribot")+")" : "("+t("feribot")+") "+t(v.slice(10))) : t(v);
+const viaList = r => isBack() ? r.via.slice().reverse().map(v=>viaName(v,true)) : r.via.map(v=>viaName(v,false));
 const mapsUrl = (P,r) => "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="+encodeURIComponent(P.fMaps)+"&destination="+encodeURIComponent(P.tMaps)+"&waypoints="+encodeURIComponent((isBack()?r.mapsVia.slice().reverse():r.mapsVia).join("|"));
 const T = { // yöne göre metinler
-  arr: () => isBack() ? "Türkiye'den çıkış (sınır)" : "Türkiye sınırına varış",
-  gate: () => isBack() ? "Türkiye çıkışı" : "Türkiye girişi",
-  rec: () => isBack() ? "Önerilen çıkış" : "Önerilen giriş",
-  euNet: () => isBack() ? "Türkiye sınırından sonra AB interneti" : "Türkiye'ye kadar AB interneti",
+  arr: () => t(isBack() ? "Türkiye'den çıkış (sınır)" : "Türkiye sınırına varış"),
+  gate: () => t(isBack() ? "Türkiye çıkışı" : "Türkiye girişi"),
+  rec: () => t(isBack() ? "Önerilen çıkış" : "Önerilen giriş"),
+  euNet: () => t(isBack() ? "Türkiye sınırından sonra AB interneti" : "Türkiye'ye kadar AB interneti"),
 };
 
 function computeRoutes(){
@@ -826,26 +850,26 @@ function computeRoutes(){
 // ADIM 2
 function renderRoutes(){
   const P = places(), list = computeRoutes();
-  $("#tripLine").textContent = `${P.fName} → ${P.tName} · çıkış ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`;
+  $("#tripLine").textContent = `${P.fName} → ${P.tName} · `+t("çıkış {date}, {time}",{date:fmtDate($("#date").value),time:$("#hour").selectedOptions[0].text});
   $("#routes").innerHTML = list.map((x,i)=>{
-    const r=x.r, nonEU = r.countries.filter(c=>!C[c].eu && c!=="TR").map(c=>C[c].n);
+    const r=x.r, nonEU = r.countries.filter(c=>!C[c].eu && c!=="TR").map(c=>cn(c));
     return `<article class="panel route compact${i===0?" best":""}">
       <div class="stack" style="gap:6px;min-width:0">
-        ${i===0?'<span class="chip good" style="align-self:flex-start">Önerilen</span>':""}
-        <h3>${r.name}</h3>
+        ${i===0?`<span class="chip good" style="align-self:flex-start">${t("Önerilen")}</span>`:""}
+        <h3>${t(r.name)}</h3>
         <div class="plates">${(isBack()?r.countries.slice().reverse():r.countries).map(plate).join('<span class="arrow">›</span>')}</div>
       </div>
       <div class="meta">
         <span class="big">${fmtMin(Math.round(x.total/5)*5)}</span>
-        <span class="muted small num">≈ ${x.km.toLocaleString("tr-TR")} km${r.ferry?" + feribot":""}</span>
+        <span class="muted small num">≈ ${x.km.toLocaleString(LOC())} km${r.ferry?" + "+t("feribot"):""}</span>
       </div>
       <div class="body">
         <div class="chips">
-          ${r.borders.length?`<span class="chip ${level(x.transit+x.best.m)}">Sınırlarda ≈ ${fmtMin(x.transit+x.best.m)}</span>`:`<span class="chip ${level(x.best.m)}">Sadece Türkiye sınırı ≈ ${fmtMin(x.best.m)}</span>`}
+          ${r.borders.length?`<span class="chip ${level(x.transit+x.best.m)}">${t("Sınırlarda")} ≈ ${fmtMin(x.transit+x.best.m)}</span>`:`<span class="chip ${level(x.best.m)}">${t("Sadece Türkiye sınırı")} ≈ ${fmtMin(x.best.m)}</span>`}
           <span class="chip">${T.arr()} ≈ ${fmtDT(x.arr)}</span>
-          ${nonEU.length?`<span class="chip bad">${nonEU.join(", ")}'da AB interneti yok</span>`:`<span class="chip good">${T.euNet()}</span>`}
+          ${nonEU.length?`<span class="chip bad">${t("{countries}'da AB interneti yok",{countries:nonEU.join(", ")})}</span>`:`<span class="chip good">${T.euNet()}</span>`}
         </div>
-        <div class="row"><button class="btn${i===0?"":" ghost"}" type="button" data-pick="${r.id}">Bu rotayı seç</button></div>
+        <div class="row"><button class="btn${i===0?"":" ghost"}" type="button" data-pick="${r.id}">${t("Bu rotayı seç")}</button></div>
       </div>
     </article>`;
   }).join("");
@@ -858,57 +882,57 @@ function renderPlan(){
   const r = x.r; selRoute = r.id; atTime = x.arr; // not: dönüşte diğer sınırlar için kaba yaklaşım
   const arrDay = iso(x.arr);
   const P = places(), inR = c => r.countries.includes(c);
-  const nonEU = r.countries.filter(c=>!C[c].eu && c!=="TR").map(c=>C[c].n);
+  const nonEU = r.countries.filter(c=>!C[c].eu && c!=="TR").map(c=>cn(c));
   $("#planHead").innerHTML = `
-    <div class="stephead"><div class="stack" style="gap:4px;min-width:0"><h2>${P.fName} → ${P.tName}</h2><p class="small muted">${r.name}</p></div>
-      <div class="meta" style="text-align:right"><span class="big num" style="font-size:22px;font-weight:700">${fmtMin(Math.round(x.total/5)*5)}</span><span class="small muted num"> ≈ ${x.km.toLocaleString("tr-TR")} km</span></div></div>
+    <div class="stephead"><div class="stack" style="gap:4px;min-width:0"><h2>${P.fName} → ${P.tName}</h2><p class="small muted">${t(r.name)}</p></div>
+      <div class="meta" style="text-align:right"><span class="big num" style="font-size:22px;font-weight:700">${fmtMin(Math.round(x.total/5)*5)}</span><span class="small muted num"> ≈ ${x.km.toLocaleString(LOC())} km</span></div></div>
     <p class="small muted">${[P.fName,...viaList(r),P.tName].join(" → ")}</p>
-    <p class="small">${T.arr()} ≈ <b>${fmtDT(x.arr)}</b> <span class="muted">(molalar hariç; bekleme tahminleri bu saate göre)</span></p>
+    <p class="small">${T.arr()} ≈ <b>${fmtDT(x.arr)}</b> <span class="muted">(${t("molalar hariç; bekleme tahminleri bu saate göre")})</span></p>
     <div class="plates">${(isBack()?r.countries.slice().reverse():r.countries).map(plate).join('<span class="arrow">›</span>')}</div>
-    <ul class="clean small">${r.pros.concat(r.cons).map(t=>`<li>${t}</li>`).join("")}</ul>
-    <div class="row"><a class="btn" href="${mapsUrl(P,r)}" target="_blank" rel="noopener">Google Haritalar'da aç</a>
-      <a class="btn ghost" id="waShare" href="https://wa.me/" target="_blank" rel="noopener">WhatsApp'ta paylaş</a>
-      <button class="btn ghost" type="button" id="copyPlan">Planı kopyala</button><span id="shareMsg" role="status"></span></div>
+    <ul class="clean small">${r.pros.concat(r.cons).map(x=>`<li>${t(x)}</li>`).join("")}</ul>
+    <div class="row"><a class="btn" href="${mapsUrl(P,r)}" target="_blank" rel="noopener">${t("Google Haritalar'da aç")}</a>
+      <a class="btn ghost" id="waShare" href="https://wa.me/" target="_blank" rel="noopener">${t("WhatsApp'ta paylaş")}</a>
+      <button class="btn ghost" type="button" id="copyPlan">${t("Planı kopyala")}</button><span id="shareMsg" role="status"></span></div>
     <textarea id="planTextBox" readonly hidden style="width:100%;min-height:180px;font:inherit;font-size:13px"></textarea>`;
   const b = busy(arrDay);
-  $("#busyNote").hidden = !b; $("#busyNote").innerHTML = b ? `<b>Yoğun dönem.</b> ${b.t} Bekleme tahminleri buna göre artırıldı; mümkünse 1–2 gün kaydır ya da gece saatlerinde geç.` : "";
+  $("#busyNote").hidden = !b; $("#busyNote").innerHTML = b ? `<b>${t("Yoğun dönem.")}</b> ${b.t} ${t("Bekleme tahminleri buna göre artırıldı; mümkünse 1–2 gün kaydır ya da gece saatlerinde geç.")}` : "";
   const hol = routeHolidays(r, arrDay);
   const bAll = busyAll(arrDay);
-  $("#sumHol").textContent = (bAll.items.length + hol.length) ? `${bAll.items.length + hol.length} not` : "Özel bir tatil yok";
-  $("#holList").innerHTML = (bAll.items.map(t=>`<div class="row small"><span class="chip warn">Gurbetçi trafiği</span><span style="flex:1 1 220px">${t}</span></div>`).join("")
-    + hol.map(h=>`<div class="row small">${plate(h.c)}<span class="chip ${h.kind==="pub"?"bad":"good"}">${h.kind==="pub"?"Resmi tatil":"Okul tatili"}</span><span style="flex:1 1 220px">${C[h.c].n} · ${h.t}</span></div>`).join(""))
-    || '<p class="small">Seçtiğin günlerde rotanda resmi veya okul tatili görünmüyor.</p>';
-  $("#sosRows").innerHTML = ["DE",...r.countries.filter(c=>c!=="DE")].map(c=>{ const v=SOS[c]; return `<tr><td>${plate(c)} ${C[c].n}</td><td class="small num">${v[0]}</td><td class="small num">${v[1]||"–"}</td>
-    <td class="small">${v[2].length?v[2].map(m=>`<a href="${m[1]}" target="_blank" rel="noopener">${m[0]}</a>`).join("<br>"):"–"}</td></tr>`; }).join("");
+  $("#sumHol").textContent = (bAll.items.length + hol.length) ? t("{n} not",{n:bAll.items.length + hol.length}) : t("Özel bir tatil yok");
+  $("#holList").innerHTML = (bAll.items.map(x=>`<div class="row small"><span class="chip warn">${t("Gurbetçi trafiği")}</span><span style="flex:1 1 220px">${x}</span></div>`).join("")
+    + hol.map(h=>`<div class="row small">${plate(h.c)}<span class="chip ${h.kind==="pub"?"bad":"good"}">${t(h.kind==="pub"?"Resmi tatil":"Okul tatili")}</span><span style="flex:1 1 220px">${cn(h.c)} · ${h.t}</span></div>`).join(""))
+    || `<p class="small">${t("Seçtiğin günlerde rotanda resmi veya okul tatili görünmüyor.")}</p>`;
+  $("#sosRows").innerHTML = ["DE",...r.countries.filter(c=>c!=="DE")].map(c=>{ const v=SOS[c]; return `<tr><td>${plate(c)} ${cn(c)}</td><td class="small num">${t(v[0])}</td><td class="small num">${t(v[1])||"–"}</td>
+    <td class="small">${v[2].length?v[2].map(m=>`<a href="${m[1]}" target="_blank" rel="noopener">${t(m[0])}</a>`).join("<br>"):"–"}</td></tr>`; }).join("");
 
   // Gümrük: yalnızca bu rotanın kapıları
   const entries = x.entries;
-  $("#sumGate").textContent = `${T.rec()}: ${GATES[x.best.id].n} ≈ ${fmtMin(x.best.m)}`;
+  $("#sumGate").textContent = `${T.rec()}: ${t(GATES[x.best.id].n)} ≈ ${fmtMin(x.best.m)}`;
   $("#gatesTR").innerHTML = entries.map((e,i)=>gateCard(e.id, i===0)).join("");
   $("#gatesTransitWrap").hidden = !r.borders.length;
   atTime = addMin(x.arr, isBack() ? x.best.m + r.km*0.5/85*60 : -x.transit);
   $("#gatesTransit").innerHTML = (isBack()?r.borders.slice().reverse():r.borders).filter(b=>b!=="ruse").concat(r.borders.includes("ruse")?["ruse"]:[]).map(b=>gateCard(b,false)).join("");
-  $("#liveLinks").innerHTML = (r.borders.includes("horgos")?`, <a href="https://www.police.hu/hu/hirek-es-informaciok/hatarinfo" target="_blank" rel="noopener">Macaristan Határinfo</a>`:"")
-    + (inR("RS")?`, <a href="https://www.amss.org.rs" target="_blank" rel="noopener">AMSS Sırbistan</a>`:"");
+  $("#liveLinks").innerHTML = (r.borders.includes("horgos")?`, <a href="https://www.police.hu/hu/hirek-es-informaciok/hatarinfo" target="_blank" rel="noopener">${t("Macaristan Határinfo")}</a>`:"")
+    + (inR("RS")?`, <a href="https://www.amss.org.rs" target="_blank" rel="noopener">${t("AMSS Sırbistan")}</a>`:"");
 
   // Vinyet
   const tolls = r.tolls.map(k=>TOLLS[k]);
-  $("#sumToll").textContent = [...new Set(tolls.map(t=>C[t.c].n))].join(", ");
-  $("#tollRows").innerHTML = tolls.map(t=>`<tr><td>${plate(t.c)} ${C[t.c].n}</td><td>${t.sys}</td><td class="small">${t.where}</td><td class="small num">${t.price}</td><td class="small">${t.note}</td></tr>`).join("");
+  $("#sumToll").textContent = [...new Set(tolls.map(x=>cn(x.c)))].join(", ");
+  $("#tollRows").innerHTML = tolls.map(x=>`<tr><td>${plate(x.c)} ${cn(x.c)}</td><td>${t(x.sys)}</td><td class="small">${t(x.where)}</td><td class="small num">${t(x.price)}</td><td class="small">${t(x.note)}</td></tr>`).join("");
 
   // Hız
   const sp = SPEED.filter(s=>inR(s[0]));
-  $("#sumSpeed").textContent = "Otoyol: " + sp.map(s=>C[s[0]].p+" "+(s[4].startsWith("Sınırsız")?"∞":s[4].split(" ")[0])).join(" · ");
+  $("#sumSpeed").textContent = t("Otoyol")+": " + sp.map(s=>C[s[0]].p+" "+(s[4].startsWith("Sınırsız")?"∞":s[4].split(" ")[0])).join(" · ");
   $("#speedRows").innerHTML = sp.map(s=>`<tr><td><span class="plate">${C[s[0]].p}</span> ${C[s[0]].n}</td>
-    <td class="n">${s[1]}</td><td class="n">${s[2]}</td><td class="n">${s[3]}</td>
-    <td class="n">${s[4].startsWith("Sınırsız")?s[4]:`<span class="speed">${s[4].split(" ")[0]}</span> ${s[4].split(" ").slice(1).join(" ")}`}</td>
-    <td class="n">${s[5]}</td><td class="small">${s[6]}</td></tr>`).join("");
+    <td class="n">${s[1]}</td><td class="n">${t(s[2])}</td><td class="n">${s[3]}</td>
+    <td class="n">${s[4].startsWith("Sınırsız")?t(s[4]):`<span class="speed">${s[4].split(" ")[0]}</span> ${t(s[4].split(" ").slice(1).join(" "))}`}</td>
+    <td class="n">${s[5]}</td><td class="small">${t(s[6])}</td></tr>`).join("");
 
   // İnternet
-  $("#sumRoam").textContent = nonEU.length ? `${nonEU.join(", ")} ve Türkiye'de AB roaming yok` : (isBack() ? "Türkiye sınırından sonra AB roaming geçerli" : "Türkiye'ye kadar AB roaming geçerli");
+  $("#sumRoam").textContent = nonEU.length ? t("{countries} ve Türkiye'de AB roaming yok",{countries:nonEU.join(", ")}) : t(isBack() ? "Türkiye sınırından sonra AB roaming geçerli" : "Türkiye'ye kadar AB roaming geçerli");
   $("#roamRows").innerHTML = ROAM.filter(v=>inR(v[0])).map(v=>`<tr><td>${plate(v[0])} ${C[v[0]].n}</td>
-    <td><span class="chip ${v[1]?"good":"bad"}">${v[1]?"Geçerli":"Geçerli değil"}</span></td><td class="small">${v[2]}</td></tr>`).join("");
-  $("#roamZones").innerHTML = ZONES.filter(z=>z.c.every(inR)).map(z=>`<article class="panel gate"><div class="head"><h3>${z.n}</h3><span class="chip ${z.lvl}">${z.lvl==="bad"?"Yüksek risk":"Dikkat"}</span></div><p class="small muted">${z.d}</p><p class="small">${z.t}</p></article>`).join("");
+    <td><span class="chip ${v[1]?"good":"bad"}">${t(v[1]?"Geçerli":"Geçerli değil")}</span></td><td class="small">${t(v[2])}</td></tr>`).join("");
+  $("#roamZones").innerHTML = ZONES.filter(z=>z.c.every(inR)).map(z=>`<article class="panel gate"><div class="head"><h3>${t(z.n)}</h3><span class="chip ${z.lvl}">${t(z.lvl==="bad"?"Yüksek risk":"Dikkat")}</span></div><p class="small muted">${t(z.d)}</p><p class="small">${t(z.t)}</p></article>`).join("");
   $("#tipRS").hidden = !inR("RS"); $("#tipFerry").hidden = !r.ferry;
 
   renderFuel(r, inR, x);
@@ -919,19 +943,19 @@ function renderPlan(){
 let lastPlanText = "";
 function planText(P,x){
   const r=x.r, ev=$("#fuel").value==="e";
-  const vig=[...new Set(r.tolls.map(k=>TOLLS[k]).map(t=>C[t.c].n+": "+t.sys))];
+  const vig=[...new Set(r.tolls.map(k=>TOLLS[k]).map(x=>cn(x.c)+": "+t(x.sys)))];
   const lines = [
-    `Sıla Yolu planı: ${P.fName} → ${P.tName}`,
-    `Rota: ${r.name}`,
-    `Güzergâh: ${[P.fName,...viaList(r),P.tName].join(" → ")}`,
-    `Süre ≈ ${fmtMin(Math.round(x.total/5)*5)}, ≈ ${x.km.toLocaleString("tr-TR")} km`,
-    `Yola çıkış: ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`,
-    `${T.arr()} ≈ ${fmtDT(x.arr)} (molalar hariç)`,
-    `${T.gate()}: ${GATES[x.best.id].n} (tahmini bekleme ≈ ${fmtMin(x.best.m)})`,
-    `Ücretler: ${vig.join("; ")}`,
-    lastStops.length ? `${ev?"Şarj":"Yakıt"} molaları: ${lastStops.join(", ")}` : "",
-    `Acil: 112 · Konsolosluk Çağrı Merkezi +90 312 292 29 29`,
-    `Harita: ${mapsUrl(P,r)}`,
+    `${t("Sıla Yolu planı")}: ${P.fName} → ${P.tName}`,
+    `${t("Rota")}: ${t(r.name)}`,
+    `${t("Güzergâh")}: ${[P.fName,...viaList(r),P.tName].join(" → ")}`,
+    `${t("Süre")} ≈ ${fmtMin(Math.round(x.total/5)*5)}, ≈ ${x.km.toLocaleString(LOC())} km`,
+    `${t("Yola çıkış")}: ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`,
+    `${T.arr()} ≈ ${fmtDT(x.arr)} (${t("molalar hariç")})`,
+    `${T.gate()}: ${t(GATES[x.best.id].n)} (${t("tahmini bekleme")} ≈ ${fmtMin(x.best.m)})`,
+    `${t("Ücretler")}: ${vig.join("; ")}`,
+    lastStops.length ? `${t(ev?"Şarj molaları":"Yakıt molaları")}: ${lastStops.join(", ")}` : "",
+    `${t("Acil")}: 112 · ${t("Konsolosluk Çağrı Merkezi")} +90 312 292 29 29`,
+    `${t("Harita")}: ${mapsUrl(P,r)}`,
   ].filter(Boolean);
   return lastPlanText = lines.join("\n");
 }
@@ -939,24 +963,24 @@ let lastStops = [];
 document.addEventListener("click",async e=>{
   if(!e.target.closest("#copyPlan")) return;
   const msg=$("#shareMsg");
-  try{ await navigator.clipboard.writeText(lastPlanText); msg.textContent="Plan kopyalandı"; }
-  catch(err){ const t=$("#planTextBox"); t.hidden=false; t.value=lastPlanText; t.focus(); t.select(); msg.textContent="Metni seçip kopyala"; }
+  try{ await navigator.clipboard.writeText(lastPlanText); msg.textContent=t("Plan kopyalandı"); }
+  catch(err){ const box=$("#planTextBox"); box.hidden=false; box.value=lastPlanText; box.focus(); box.select(); msg.textContent=t("Metni seçip kopyala"); }
 });
 function gateCard(id, recommended){
   const g=GATES[id], w=gateWait(id), lv=level(w.m), back=isBack();
-  const o = back && !g.tr ? g.o.split(" → ").reverse().join(" → ") : g.o, t = back && g.tb ? g.tb : g.t;
+  const o = t(back && !g.tr ? g.o.split(" → ").reverse().join(" → ") : g.o), txt = t(back && g.tb ? g.tb : g.t);
   const pct=Math.min(100, w.m/300*100);
   return `<article class="panel gate">
-    <div class="head"><h3>${g.n}</h3><span class="num" style="font-weight:700;color:var(--${lv})">${fmtMin(w.m)}</span></div>
+    <div class="head"><h3>${t(g.n)}</h3><span class="num" style="font-weight:700;color:var(--${lv})">${fmtMin(w.m)}</span></div>
     <div class="bar" aria-hidden="true"><i style="width:${pct}%;background:var(--${lv})"></i></div>
     ${recommended?`<span class="chip good" style="align-self:flex-start">${T.rec()}</span>`:""}
-    <p class="small muted">${o}${g.city?" · "+g.city:""} · ${g.h}</p>
-    <p class="small">${t}</p>
+    <p class="small muted">${o}${g.city?" · "+g.city:""} · ${t(g.h)}</p>
+    <p class="small">${txt}</p>
     <div class="row small">
-      <label for="obs-${id}" style="flex-direction:row;align-items:center;gap:8px">Gözlem (dk)
+      <label for="obs-${id}" style="flex-direction:row;align-items:center;gap:8px">${t("Gözlem (dk)")}
         <input id="obs-${id}" data-obs="${id}" type="number" min="0" step="5" style="max-width:90px" placeholder="${estWait(id)}" value="${obs[obsKey(id)]??""}">
       </label>
-      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(g.n.split(" /")[0]+" sınır kapısı")}" target="_blank" rel="noopener">Haritada gör</a>
+      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(g.n.split(" /")[0]+" sınır kapısı")}" target="_blank" rel="noopener">${t("Haritada gör")}</a>
     </div>
   </article>`;
 }
@@ -971,13 +995,14 @@ document.addEventListener("change",e=>{
 const stationsLink = q => "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("benzin istasyonu "+q);
 const evLink = q => "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("EV charging station "+q);
 // Günlük güncellenen fiyatlar (paylaşılan veritabanından)
-let PRICE_DATES = {};
+let PRICE_DATES = {}, PRICE_UPDATED = null;
 function applyPrices(d){
   if(!d) return;
   const ok = v => typeof v==="number" && isFinite(v) && v>0.1 && v<10;
   Object.entries(d.fuel||{}).forEach(([c,v])=>{ if(FUEL[c] && Array.isArray(v) && ok(v[0]) && ok(v[1])){ FUEL[c][0]=v[0]; FUEL[c][1]=v[1]; } });
   PRICE_DATES = (d.dates && typeof d.dates==="object") ? d.dates : {};
-  if(typeof d.updated==="string") $("#priceStamp").textContent = "Fiyatlar en son "+d.updated.slice(0,10).split("-").reverse().join(".")+" tarihinde güncellendi.";
+  if(typeof d.updated==="string") PRICE_UPDATED = d.updated;
+  if(typeof d.updated==="string") $("#priceStamp").textContent = t("Fiyatlar en son {date} tarihinde güncellendi.",{date:d.updated.slice(0,10).split("-").reverse().join(".")});
 }
 (async()=>{
   try{
@@ -993,10 +1018,10 @@ function renderFuel(r, inR, x){
   const range = Math.max(100, +$("#range").value||(ev?400:650)), cons = Math.max(3, +$("#cons").value||(ev?18:7));
   const price = c => FUEL[c][fi];
   $("#priceNote").hidden = ev;
-  $("#fuelTitle").textContent = ev ? "Şarj molaları" : "Yakıt molaları";
-  $("#tableTitle").textContent = ev ? "Rotandaki şarj ağları" : "Rotandaki ortalama fiyatlar";
-  $("#planNote").textContent = ev ? `Tam şarjla çıktığını, ${range} km menzil ile her molada %10'dan %80'e şarj ettiğini varsayar (yaklaşık 30–40 dk).`
-    : `Dolu depoyla çıktığını, ${range} km menzil ile deponun dörtte biri kalmadan doldurduğunu varsayar.`;
+  $("#fuelTitle").textContent = t(ev ? "Şarj molaları" : "Yakıt molaları");
+  $("#tableTitle").textContent = t(ev ? "Rotandaki şarj ağları" : "Rotandaki ortalama fiyatlar");
+  $("#planNote").textContent = ev ? t("Tam şarjla çıktığını, {range} km menzil ile her molada %10'dan %80'e şarj ettiğini varsayar (yaklaşık 30–40 dk).",{range})
+    : t("Dolu depoyla çıktığını, {range} km menzil ile deponun dörtte biri kalmadan doldurduğunu varsayar.",{range});
   $("#evLinks").hidden = !ev;
   const P = places();
   const edirne = GATES[r.entry[0]].city||"Edirne";
@@ -1004,11 +1029,11 @@ function renderFuel(r, inR, x){
   if(isBack()){
     pts = [{n:P.fName,q:P.fMaps,c:"TR",km:0},
       ...(x.endKm>30 ? [{n:edirne,q:edirne,c:"TR",km:x.endKm-20}] : []),
-      ...STOPS[r.id].slice().reverse().map(s=>({n:s[0],q:s[1],c:s[2],km:x.endKm+r.km-s[3]})),
+      ...STOPS[r.id].slice().reverse().map(s=>({n:t(s[0]),q:s[1],c:s[2],km:x.endKm+r.km-s[3]})),
       {n:P.tName,q:P.tMaps,c:"DE",km:x.endKm+r.km+x.startKm}];
   } else {
     pts = [{n:P.fName,q:P.fMaps,c:"DE",km:0},
-      ...STOPS[r.id].map(s=>({n:s[0],q:s[1],c:s[2],km:x.startKm+s[3]})),
+      ...STOPS[r.id].map(s=>({n:t(s[0]),q:s[1],c:s[2],km:x.startKm+s[3]})),
       {n:edirne,q:edirne,c:"TR",km:x.startKm+r.km+20},
       {n:P.tName,q:P.tMaps,c:"TR",km:x.startKm+r.km+x.endKm}];
     if(pts[pts.length-1].km < pts[pts.length-2].km) pts.splice(pts.length-2,1);
@@ -1021,32 +1046,32 @@ function renderFuel(r, inR, x){
   lastStops = plan.map(s=>s.n);
   const total = pts[pts.length-1].km;
   const cheapest = [...new Set(r.countries)].filter(c=>FUEL[c]).sort((a,b)=>price(a)-price(b))[0];
-  $("#sumFuel").textContent = ev ? `${plan.length} şarj molası, ≈ ${fmtMin(plan.length*35)}` : `${plan.length} mola · tahmini ${Math.round(cost/5)*5} €`;
-  $("#fuelSummary").innerHTML = `<span class="chip">${ev?"Enerji":"Yakıt"} ≈ ${Math.round(total*cons/100)} ${ev?"kWh":"L"}</span>
-    ${ev ? "" : `<span class="chip warn">Tahmini maliyet ≈ ${Math.round(cost/5)*5} €</span><span class="chip good">En ucuz: ${C[cheapest].n}</span>`}
-    ${ev && r.countries.includes("RS") ? '<span class="chip bad">Sırbistan\'da hızlı şarj seyrek</span>' : ""}`;
+  $("#sumFuel").textContent = ev ? t("{n} şarj molası, ≈ {time}",{n:plan.length,time:fmtMin(plan.length*35)}) : t("{n} mola · tahmini {cost} €",{n:plan.length,cost:Math.round(cost/5)*5});
+  $("#fuelSummary").innerHTML = `<span class="chip">${t(ev?"Enerji":"Yakıt")} ≈ ${Math.round(total*cons/100)} ${ev?"kWh":"L"}</span>
+    ${ev ? "" : `<span class="chip warn">${t("Tahmini maliyet")} ≈ ${Math.round(cost/5)*5} €</span><span class="chip good">${t("En ucuz")}: ${cn(cheapest)}</span>`}
+    ${ev && r.countries.includes("RS") ? `<span class="chip bad">${t("Sırbistan'da hızlı şarj seyrek")}</span>` : ""}`;
   $("#fuelPlan").innerHTML = plan.length ? plan.map((s,i)=>{
     const f = ev ? [null,null,EV[s.c][0],EV[s.c][1]] : FUEL[s.c];
     return `<article class="panel route">
       <div class="stack" style="gap:4px;min-width:0"><h3><span class="rank">${i+1}.</span> ${s.n}</h3>
-      <p class="small muted">${C[s.c].n} · ≈ ${Math.round(s.km/5)*5}. km · ${f[2]}</p></div>
-      ${ev ? "" : `<div class="meta"><span class="big">${price(s.c).toFixed(2).replace(".",",")} €</span><span class="small muted">${fi?"dizel":"benzin"}${PRICE_DATES[s.c]?", "+PRICE_DATES[s.c]:""}</span></div>`}
-      <div class="body">${f[3]?`<p class="small">${f[3]}</p>`:""}
-      <div class="row"><a class="btn ghost" href="${ev?evLink(s.q):stationsLink(s.q)}" target="_blank" rel="noopener">${ev?"Şarj istasyonlarını gör":"İstasyonları gör"}</a></div></div>
-    </article>`;}).join("") : `<p class="small">Menzilin bu rota için yeterli, yolda ${ev?"şarja":"yakıt almaya"} gerek yok.</p>`;
-  $("#fuelHead").innerHTML = ev ? "<tr><th>Ülke</th><th>Şarj ağları</th><th>İpucu</th></tr>"
-    : "<tr><th>Ülke</th><th>Benzin</th><th>Dizel</th><th>Yaygın markalar</th><th>İpucu</th></tr>";
-  if(ev){ $("#fuelRows").innerHTML = Object.keys(EV).filter(inR).map(c=>`<tr><td>${plate(c)} ${C[c].n}</td>
-    <td class="small">${EV[c][0]}</td><td class="small">${EV[c][1]}</td></tr>`).join(""); return; }
-  $("#fuelRows").innerHTML = Object.keys(FUEL).filter(inR).map(c=>`<tr><td>${plate(c)} ${C[c].n}</td>
-    <td class="n">${FUEL[c][0].toFixed(2).replace(".",",")} €</td><td class="n">${FUEL[c][1].toFixed(2).replace(".",",")} €</td>
-    <td class="small">${FUEL[c][2]}</td><td class="small">${FUEL[c][3]}${PRICE_DATES[c]?`<br><span class="muted">Fiyat tarihi: ${PRICE_DATES[c]}</span>`:""}</td></tr>`).join("");
+      <p class="small muted">${cn(s.c)} · ${t("≈ {km}. km",{km:Math.round(s.km/5)*5})} · ${t(f[2])}</p></div>
+      ${ev ? "" : `<div class="meta"><span class="big">${fmtEur(price(s.c))} €</span><span class="small muted">${t(fi?"dizel":"benzin")}${PRICE_DATES[s.c]?", "+PRICE_DATES[s.c]:""}</span></div>`}
+      <div class="body">${f[3]?`<p class="small">${t(f[3])}</p>`:""}
+      <div class="row"><a class="btn ghost" href="${ev?evLink(s.q):stationsLink(s.q)}" target="_blank" rel="noopener">${t(ev?"Şarj istasyonlarını gör":"İstasyonları gör")}</a></div></div>
+    </article>`;}).join("") : `<p class="small">${t(ev?"Menzilin bu rota için yeterli, yolda şarja gerek yok.":"Menzilin bu rota için yeterli, yolda yakıt almaya gerek yok.")}</p>`;
+  $("#fuelHead").innerHTML = "<tr>"+(ev ? ["Ülke","Şarj ağları","İpucu"] : ["Ülke","Benzin","Dizel","Yaygın markalar","İpucu"]).map(h=>`<th>${t(h)}</th>`).join("")+"</tr>";
+  if(ev){ $("#fuelRows").innerHTML = Object.keys(EV).filter(inR).map(c=>`<tr><td>${plate(c)} ${cn(c)}</td>
+    <td class="small">${t(EV[c][0])}</td><td class="small">${t(EV[c][1])}</td></tr>`).join(""); return; }
+  $("#fuelRows").innerHTML = Object.keys(FUEL).filter(inR).map(c=>`<tr><td>${plate(c)} ${cn(c)}</td>
+    <td class="n">${fmtEur(FUEL[c][0])} €</td><td class="n">${fmtEur(FUEL[c][1])} €</td>
+    <td class="small">${FUEL[c][2]}</td><td class="small">${t(FUEL[c][3])}${PRICE_DATES[c]?`<br><span class="muted">${t("Fiyat tarihi")}: ${PRICE_DATES[c]}</span>`:""}</td></tr>`).join("");
 }
 
 // Kontrol listesi: rotaya göre
 const done = store.get("check",{});
 function renderChecklist(r){
-  const vig = [...new Set(r.tolls.map(k=>TOLLS[k]).filter(t=>/vinyet|matrica|Rovinieta|e-známka|dálniční/i.test(t.sys)).map(t=>C[t.c].n))];
+  const vigC = [...new Set(r.tolls.map(k=>TOLLS[k]).filter(x=>/vinyet|matrica|Rovinieta|e-známka|dálniční/i.test(x.sys)).map(x=>x.c))];
+  const vig = vigC.map(c=>C[c].n);
   const items = [
     "Pasaport veya kimlik",
     "Araç ruhsatı; araç senin değilse noter onaylı vekaletname",
@@ -1061,8 +1086,10 @@ function renderChecklist(r){
     isBack() ? "Türkiye'den AB'ye et ve süt ürünü (sucuk, pastırma, peynir vb.) getirmek yasak; sınırda el konur" : null,
     isBack() ? "AB'ye girişte sigara ve alkol sınırları düşük (bazı kara sınırlarında 40 sigara); fazlasını beyan et" : null,
   ].filter(Boolean);
-  $("#sumCheck").textContent = `${items.filter(t=>done[t]).length} / ${items.length}`;
-  $("#checklist").innerHTML = items.map((c,i)=>`<label class="check" for="ck${i}"><input type="checkbox" id="ck${i}" data-ck="${c.replace(/"/g,"&quot;")}" ${done[c]?"checked":""}><span>${c}</span></label>`).join("");
+  const show = c => c.startsWith("Yeşil kart:") ? t("Yeşil kart: {letters} harfleri üstü çizili olmamalı",{letters:inList(r,"RS")?`<b>TR</b> ${t("ve")} <b>SRB</b>`:"<b>TR</b>"})
+    : c.startsWith("Vinyetler:") ? t("Vinyetler")+": "+vigC.map(cn).join(", ") : t(c);
+  $("#sumCheck").textContent = `${items.filter(x=>done[x]).length} / ${items.length}`;
+  $("#checklist").innerHTML = items.map((c,i)=>`<label class="check" for="ck${i}"><input type="checkbox" id="ck${i}" data-ck="${c.replace(/"/g,"&quot;")}" ${done[c]?"checked":""}><span>${show(c)}</span></label>`).join("");
 }
 const inList = (r,c) => r.countries.includes(c);
 $("#checklist").addEventListener("change",e=>{ const k=e.target.dataset.ck; if(k==null)return; done[k]=e.target.checked; store.set("check",done); renderPlan(); });
@@ -1070,12 +1097,12 @@ $("#checklist").addEventListener("change",e=>{ const k=e.target.dataset.ck; if(k
 // Araç
 const isEV = () => $("#fuel").value==="e";
 function loadVeh(){ const e=isEV(); $("#range").value = store.get(e?"range_e":"range", e?"400":"650"); $("#cons").value = store.get(e?"cons_e":"cons", e?"18":"7");
-  $("#consLbl").textContent = e ? "Tüketim (kWh/100 km)" : "Tüketim (L/100 km)"; }
+  $("#consLbl").textContent = t(e ? "Tüketim (kWh/100 km)" : "Tüketim (L/100 km)"); }
 $("#fuel").value = store.get("fuel","b"); loadVeh();
 $("#fuel").addEventListener("change",()=>{ store.set("fuel",$("#fuel").value); loadVeh(); });
 ["range","cons"].forEach(id=>$("#"+id).addEventListener("change",()=>store.set(isEV()?id+"_e":id,$("#"+id).value)));
 ["from","to"].forEach(id=>$("#"+id).addEventListener("input",()=>{ store.set("loc_"+id,$("#"+id).value); hints(); }));
-function dateHint(){ const b=busy($("#date").value); $("#dateHint").className="hint"+(b?" busy":""); const all=busyAll($("#date").value).items; $("#dateHint").textContent = b ? "Yoğun dönem: "+all[0]+(all.length>1?` Ayrıca ${all.length-1} yoğunluk nedeni daha var.`:"") : ""; }
+function dateHint(){ const b=busy($("#date").value); $("#dateHint").className="hint"+(b?" busy":""); const all=busyAll($("#date").value).items; $("#dateHint").textContent = b ? t("Yoğun dönem")+": "+all[0]+(all.length>1?" "+t("Ayrıca {n} yoğunluk nedeni daha var.",{n:all.length-1}):"") : ""; }
 document.querySelectorAll("input[name=dir]").forEach(el=>el.addEventListener("change",()=>{
   const f=$("#from").value, t=$("#to").value;
   store.set("dir", el.value); fillLists();
@@ -1102,8 +1129,8 @@ $("#step1").addEventListener("submit",e=>{
   e.preventDefault();
   const P = places();
   if(!P.ft || !P.tt){
-    if(!P.ft){ $("#fromHint").className="hint err"; $("#fromHint").textContent="Nereden çıkacağını yaz"; }
-    if(!P.tt){ $("#toHint").className="hint err"; $("#toHint").textContent="Nereye gideceğini yaz"; }
+    if(!P.ft){ $("#fromHint").className="hint err"; $("#fromHint").textContent=t("Nereden çıkacağını yaz"); }
+    if(!P.tt){ $("#toHint").className="hint err"; $("#toHint").textContent=t("Nereye gideceğini yaz"); }
     (P.ft?$("#to"):$("#from")).focus(); return;
   }
   selRoute = null; store.set("route",null);
@@ -1115,6 +1142,32 @@ document.addEventListener("click",e=>{
   const s=e.target.closest("[data-step]");
   if(s){ const n=+s.dataset.step; if(n===2) renderRoutes(); go(n); }
 });
+
+// Sabit HTML metinleri: ilk yüklemedeki Türkçe hâli saklanır, dil değişince yeniden çevrilir
+const STATIC_TEXT = [], STATIC_ATTR = [];
+(function(){
+  const skip = "script,style,datalist,#hour,#routes,#planHead,#gatesTR,#gatesTransit,#tollRows,#fuelPlan,#fuelRows,#fuelHead,#speedRows,#roamRows,#roamZones,#holList,#sosRows,#checklist,#langSel";
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let n; while((n = w.nextNode())){ if(n.nodeValue.trim() && !n.parentElement.closest(skip)) STATIC_TEXT.push([n, n.nodeValue]); }
+  document.querySelectorAll("[aria-label]").forEach(el=>STATIC_ATTR.push([el,"aria-label",el.getAttribute("aria-label")]));
+})();
+function applyStatic(){
+  for(const [n,o] of STATIC_TEXT){ const k=o.replace(/\s+/g," ").trim(), v=t(k); n.nodeValue = v===k ? o : (o.match(/^\s*/)[0]+v+o.match(/\s*$/)[0]); }
+  for(const [el,a,o] of STATIC_ATTR) el.setAttribute(a, t(o));
+  document.title = t("Sıla Yolu Rehberi");
+}
+const langSel = $("#langSel");
+Object.entries(LANGS).forEach(([k,v])=>langSel.add(new Option(v,k)));
+langSel.value = LANG;
+function setLang(l){
+  LANG = LANGS[l] ? l : "tr"; store.set("lang", LANG); document.documentElement.lang = LANG;
+  applyStatic(); fillLists(); hints(); dateHint(); loadVeh();
+  if(PRICE_UPDATED) $("#priceStamp").textContent = t("Fiyatlar en son {date} tarihinde güncellendi.",{date:PRICE_UPDATED.slice(0,10).split("-").reverse().join(".")});
+  if(!$("#step2").hidden) renderRoutes();
+  if(!$("#step3").hidden) renderPlan();
+}
+langSel.addEventListener("change",()=>setLang(langSel.value));
+applyStatic();
 
 // Başlangıç: kayıtlı plan varsa oradan devam et
 hints(); dateHint();
