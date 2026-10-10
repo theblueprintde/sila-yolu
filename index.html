@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Almanya'dan Türkiye'ye arabayla gidenler için rota, gümrük bekleme tahmini, vinyet, hız sınırı, roaming, yakıt ve tatil planlayıcısı.">
+<title>Sıla Yolu Rehberi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=Overpass+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: otoyol tabelası dili; 3 adım: yolculuk formu → rota seçimi → açılır bölümlü plan */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --ink:#15212c; --muted:#596777; --line:#d8dfe6;
+  --accent:#1f4fa3; --accent-ink:#ffffff; --eroad:#1b7a3e; --signal:#e0a100;
+  --good:#1d7a46; --warn:#a86300; --bad:#b3261e; --good-bg:#e3f3ea; --warn-bg:#fdf1dc; --bad-bg:#fbe5e3;
+  --display:"Overpass",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --body:"Overpass",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Overpass Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e141c; --surface:#16202b; --ink:#e5ecf2; --muted:#94a2b1; --line:#283545;
+  --accent:#6e9ae6; --accent-ink:#0e141c; --eroad:#4cb874; --signal:#f0b429;
+  --good:#5cc98d; --warn:#f0a13a; --bad:#f2766c; --good-bg:#14301f; --warn-bg:#33260d; --bad-bg:#3a1714; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141c; --surface:#16202b; --ink:#e5ecf2; --muted:#94a2b1; --line:#283545;
+  --accent:#6e9ae6; --accent-ink:#0e141c; --eroad:#4cb874; --signal:#f0b429;
+  --good:#5cc98d; --warn:#f0a13a; --bad:#f2766c; --good-bg:#14301f; --warn-bg:#33260d; --bad-bg:#3a1714; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(26px,5vw,38px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:20px;font-weight:800}
+h3{font-size:16px;font-weight:800}
+p{margin:0}
+a{color:var(--accent)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header.top{display:flex;flex-direction:column;gap:8px}
+.sign{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:var(--accent-ink);padding:6px 12px;border-radius:6px;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;align-self:flex-start}
+.sign .e{background:var(--eroad);color:#fff;border:2px solid #fff;border-radius:4px;padding:0 6px;font-family:var(--mono)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+select,input{font:inherit;font-size:15px;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0;width:100%}
+select:focus-visible,input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+.hint{font-size:12px;font-weight:400;letter-spacing:0;text-transform:none;min-height:1.2em}
+.hint.ok{color:var(--good)} .hint.warn{color:var(--warn)}
+.controls{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.filterbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.note{border-left:4px solid var(--signal);background:var(--warn-bg);padding:10px 12px;border-radius:0 6px 6px 0;font-size:13px}
+nav.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+nav.tabs button{font:inherit;font-family:var(--display);font-weight:600;font-size:14px;white-space:nowrap;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:999px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.stack{display:flex;flex-direction:column;gap:14px}
+.route{display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:start}
+.route.best{border-color:var(--good);box-shadow:0 0 0 1px var(--good)}
+.route .meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
+.route .big{font-family:var(--mono);font-weight:700;font-size:22px}
+.route .body{grid-column:1/-1;display:flex;flex-direction:column;gap:10px;min-width:0}
+.plates{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.plate{font-family:var(--mono);font-weight:700;font-size:12px;border:2px solid var(--ink);border-radius:50%/60%;padding:1px 9px;min-width:38px;text-align:center;background:var(--surface)}
+.plate.noeu{border-color:var(--bad);color:var(--bad)}
+.arrow{color:var(--muted);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--bg)}
+.chip.good{background:var(--good-bg);color:var(--good);border-color:transparent}
+.chip.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.chip.bad{background:var(--bad-bg);color:var(--bad);border-color:transparent}
+.btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-weight:600;font-size:14px;text-decoration:none;background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.speed{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:5px solid #d42a1e;background:#fff;color:#111;font-family:var(--mono);font-weight:700;font-size:14px}
+.speed.free{border-color:#888;background:#fff;color:#888;font-size:10px;position:relative}
+.gates{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.gate{display:flex;flex-direction:column;gap:8px}
+.gate .head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:4px}
+.rank{font-family:var(--mono);font-weight:700;color:var(--muted)}
+.gate input{max-width:120px}
+ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.check{display:flex;gap:10px;align-items:flex-start;text-transform:none;letter-spacing:0;font-size:15px;font-weight:400;color:var(--ink);flex-direction:row}
+.check input{width:auto;margin-top:4px}
+footer{font-size:12px;color:var(--muted)}
+@media (max-width:560px){.route{grid-template-columns:1fr}.route .meta{align-items:flex-start;text-align:left}}
+@media (prefers-reduced-motion:no-preference){.bar>i{transition:width .3s ease}}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.btn.lg{font-size:16px;padding:12px 22px}
+.stephead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+details.more summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px}
+details.more[open] summary{margin-bottom:12px}
+details.sec{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+[hidden]{display:none!important}
+details.sec>summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;padding:14px 16px;font-family:var(--display);font-weight:800;font-size:17px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:"+";font-family:var(--mono);font-size:20px;color:var(--accent);grid-column:2;grid-row:1/span 2}
+details.sec[open]>summary::after{content:"–"}
+details.sec>summary .sub{font-family:var(--body);font-weight:400;font-size:13px;color:var(--muted);grid-column:1}
+details.sec .inner{padding:0 16px 16px}
+.route.compact{gap:8px 16px}
+.err{color:var(--bad)}
+.hint.busy{color:var(--warn);font-weight:600}
+#shareMsg{font-size:13px;color:var(--good)}
+</style>
+<style>:root{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}body{margin:0;font-size:14px}img{max-width:100%}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <span class="sign"><span class="e">E80</span> Almanya → Türkiye</span>
+    <h1>Sıla Yolu Rehberi</h1>
+    <p class="muted" id="tagline">Nereden nereye gideceğini yaz, yolculuğunu adım adım planlayalım.</p>
+  </header>
+
+  <!-- ADIM 1: Yolculuk -->
+  <form id="step1" class="panel stack" novalidate>
+    <div class="fields">
+      <label for="from">Nereden?
+        <input id="from" list="fromList" autocomplete="off" placeholder="Şehir veya adres, ör. Köln">
+        <span id="fromHint" class="hint"></span>
+      </label>
+      <label for="to">Nereye?
+        <input id="to" list="toList" autocomplete="off" placeholder="Şehir veya adres, ör. Ankara">
+        <span id="toHint" class="hint"></span>
+      </label>
+      <label for="date">Sınıra varış günü
+        <input id="date" type="date">
+        <span id="dateHint" class="hint"></span>
+      </label>
+      <label for="hour">Yaklaşık saat
+        <select id="hour"></select>
+      </label>
+      <label for="fuel">Araç
+        <select id="fuel"><option value="b">Benzinli</option><option value="d">Dizel</option><option value="e">Elektrikli</option></select>
+      </label>
+    </div>
+    <datalist id="fromList"></datalist>
+    <datalist id="toList"></datalist>
+    <details class="more">
+      <summary>Menzil ve tüketim (isteğe bağlı)</summary>
+      <div class="fields">
+        <label for="range">Dolu depo / tam şarj ile menzil (km)
+          <input id="range" type="number" min="100" max="1500" step="50">
+        </label>
+        <label for="cons"><span id="consLbl">Tüketim (L/100 km)</span>
+          <input id="cons" type="number" min="3" max="30" step="0.5">
+        </label>
+      </div>
+    </details>
+    <div class="row"><button class="btn lg" type="submit">Rotamı oluştur</button></div>
+  </form>
+
+  <!-- ADIM 2: Rota seçimi -->
+  <section id="step2" class="stack" hidden>
+    <div class="stephead">
+      <div class="stack" style="gap:2px;min-width:0"><h2>Rotanı seç</h2><p class="muted small" id="tripLine"></p></div>
+      <button class="btn ghost" type="button" data-step="1">Değiştir</button>
+    </div>
+    <div id="routes" class="stack"></div>
+    <p class="muted small">Süre: ortalama 85 km/s sürüş ve seçtiğin gün ile saat için tahmini sınır beklemesi. Mola süresi dahil değil.</p>
+  </section>
+
+  <!-- ADIM 3: Plan -->
+  <section id="step3" class="stack" hidden>
+    <div class="stephead">
+      <button class="btn ghost" type="button" data-step="2">← Diğer rotalar</button>
+      <button class="btn ghost" type="button" data-step="1">Yeni yolculuk</button>
+    </div>
+    <div id="planHead" class="panel stack"></div>
+    <div id="busyNote" class="note" hidden></div>
+
+    <details class="sec" open>
+      <summary><span>Gümrük kapıları</span><span class="sub" id="sumGate"></span></summary>
+      <div class="stack inner">
+        <p class="small muted">Bekleme süreleri canlı değil, mevsime, güne ve saate göre tahmindir. Yolda öğrendiğin gerçek süreyi “Gözlem” kutusuna yazarsan öneri ona göre değişir.</p>
+        <div id="gatesTR" class="gates"></div>
+        <div id="gatesTransitWrap" class="stack"><h3>Yol üstündeki diğer sınırlar</h3><div id="gatesTransit" class="gates"></div></div>
+        <p class="small">Canlı kontrol: Google Haritalar trafik katmanı, “Kapıkule son durum” grupları<span id="liveLinks"></span>.</p>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span>Vinyet ve otoyol ücretleri</span><span class="sub" id="sumToll"></span></summary>
+      <div class="stack inner">
+        <p class="small muted">Ücretler yaklaşıktır. Satın almadan önce resmi siteden kontrol et, plakayı doğru gir.</p>
+        <div class="tbl"><table>
+          <thead><tr><th>Ülke</th><th>Sistem</th><th>Nereden alınır</th><th>Yaklaşık ücret</th><th>Dikkat</th></tr></thead>
+          <tbody id="tollRows"></tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span id="fuelTitle">Yakıt molaları</span><span class="sub" id="sumFuel"></span></summary>
+      <div class="stack inner">
+        <div id="fuelSummary" class="chips"></div>
+        <p class="muted small" id="planNote"></p>
+        <div id="evLinks" class="note" hidden>Şarj fiyatlarını göstermiyoruz, çünkü ağa ve üyeliğe göre çok değişiyor. Güncel fiyat, doluluk ve arıza için <a href="https://abetterrouteplanner.com" target="_blank" rel="noopener">A Better Route Planner</a>, <a href="https://www.plugshare.com" target="_blank" rel="noopener">PlugShare</a> veya <a href="https://chargemap.com" target="_blank" rel="noopener">Chargemap</a> kullan. Türkiye'de ZES, Eşarj, Trugo gibi ağların kendi uygulamaları gerekir.</div>
+        <div id="fuelPlan" class="stack"></div>
+        <h3 id="tableTitle">Ülkelere göre ortalama fiyat</h3>
+        <p class="small muted" id="priceNote"><span id="priceStamp">Fiyatlar 5–9 Ekim 2026 ülke ortalamalarıdır.</span> Her sabah kendiliğinden güncellenir. Otoyol istasyonları genelde 10–30 cent daha pahalıdır.</p>
+        <div class="tbl"><table>
+          <thead id="fuelHead"></thead>
+          <tbody id="fuelRows"></tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span>Hız sınırları</span><span class="sub" id="sumSpeed"></span></summary>
+      <div class="stack inner">
+        <p class="small muted">Otomobil için genel sınırlar (km/s). Tabela her zaman önceliklidir.</p>
+        <div class="tbl"><table>
+          <thead><tr><th>Ülke</th><th>Şehir içi</th><th>Şehir dışı</th><th>Ekspres yol</th><th>Otoyol</th><th>Alkol (‰)</th><th>Not</th></tr></thead>
+          <tbody id="speedRows"></tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span>Mobil internet (roaming)</span><span class="sub" id="sumRoam"></span></summary>
+      <div class="stack inner">
+        <div class="tbl"><table>
+          <thead><tr><th>Ülke</th><th>AB roaming</th><th>Açıklama</th></tr></thead>
+          <tbody id="roamRows"></tbody>
+        </table></div>
+        <div id="roamZones" class="gates"></div>
+        <ul class="clean small">
+          <li>Sınıra 20 km kala otomatik şebeke seçimini kapat ve AB şebekesini elle seç, ya da mobil veriyi kapat.</li>
+          <li id="tipRS">Sırbistan için operatörünün paketine bak veya yerel eSIM al.</li>
+          <li>Türkiye'de Türk hattı veya eSIM kullan. Yurt dışından getirilen telefon Türk hattıyla 120 gün çalışır.</li>
+          <li id="tipFerry">Feribotta telefon gemi şebekesine bağlanır, çok pahalıdır: uçak modu ve gemi Wi-Fi'ı kullan.</li>
+          <li>Haritaları yola çıkmadan çevrimdışı indir.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="sec" id="holSec">
+      <summary><span>Tatiller ve yoğun günler</span><span class="sub" id="sumHol"></span></summary>
+      <div class="stack inner">
+        <p class="small muted">Sınıra varış gününe göre: yol boyunca geçeceğin ülkelerde son 2 gün içindeki resmi tatiller, Türkiye'de varışını izleyen günler ve devam eden okul tatilleri.</p>
+        <div id="holList" class="stack"></div>
+        <p class="small muted">Resmi tatillerde otoyol dışındaki market ve benzinlikler kapalı olabilir. Kamyon yasağı olan ülkelerde (Avusturya, Macaristan, Romanya vb.) yollar daha rahat olabilir. Okul tatilinde yerel tatil trafiği artar.</p>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span>Acil numaralar ve konsolosluklar</span><span class="sub">Her yerde 112</span></summary>
+      <div class="stack inner">
+        <div class="panel stack" style="gap:4px">
+          <p class="small muted">Dışişleri Konsolosluk Çağrı Merkezi (7/24)</p>
+          <p class="big num" style="font-size:20px;font-weight:700;user-select:all">+90 312 292 29 29</p>
+          <p class="small muted">Pasaport kaybı, kaza, gözaltı gibi durumlarda arayabilirsin.</p>
+        </div>
+        <div class="tbl"><table>
+          <thead><tr><th>Ülke</th><th>Acil</th><th>Yol yardımı</th><th>Türk temsilciliği</th></tr></thead>
+          <tbody id="sosRows"></tbody>
+        </table></div>
+        <p class="small muted">ADAC üyesiysen yurt dışı acil hattı: <span class="num" style="user-select:all">+49 89 22 22 22</span>. Sahte “ADAC” çekici ve yol yardımcılarına dikkat; yardımı sadece bu numaradan iste.</p>
+      </div>
+    </details>
+
+    <details class="sec">
+      <summary><span>Yola çıkmadan kontrol listesi</span><span class="sub" id="sumCheck"></span></summary>
+      <div class="stack inner" id="checklist"></div>
+    </details>
+  </section>
+
+  <footer>Bilgiler genel rehberlik içindir; kurallar ve ücretler değişebilir. <a href="impressum.html">Künye / Impressum</a></footer>
+</div>
+
+<script>
+const C = {
+  DE:{n:"Almanya",p:"D",eu:true}, AT:{n:"Avusturya",p:"A",eu:true}, SI:{n:"Slovenya",p:"SLO",eu:true},
+  HR:{n:"Hırvatistan",p:"HR",eu:true}, HU:{n:"Macaristan",p:"H",eu:true}, RS:{n:"Sırbistan",p:"SRB",eu:false},
+  CZ:{n:"Çekya",p:"CZ",eu:true}, SK:{n:"Slovakya",p:"SK",eu:true},
+  RO:{n:"Romanya",p:"RO",eu:true}, BG:{n:"Bulgaristan",p:"BG",eu:true}, IT:{n:"İtalya",p:"I",eu:true},
+  GR:{n:"Yunanistan",p:"GR",eu:true}, TR:{n:"Türkiye",p:"TR",eu:false}
+};
+
+// Şehir koordinatları (mesafe tahmini için). Ad|enlem|boylam|diğer yazımlar
+const DE_CITIES = `Münih|48.14|11.58|munich,muenchen,münchen;Nürnberg|49.45|11.08|nuremberg;Stuttgart|48.78|9.18;Frankfurt|50.11|8.68|frankfurt am main;Köln|50.94|6.96|koln,cologne;Düsseldorf|51.23|6.78;Dortmund|51.51|7.47;Essen|51.46|7.01;Duisburg|51.43|6.76;Bochum|51.48|7.22;Gelsenkirchen|51.51|7.09;Wuppertal|51.26|7.15;Bielefeld|52.02|8.53;Bonn|50.74|7.10;Mannheim|49.49|8.47;Ludwigshafen|49.48|8.44;Heidelberg|49.40|8.67;Karlsruhe|49.01|8.40;Augsburg|48.37|10.90;Ulm|48.40|9.99;Regensburg|49.01|12.10;Würzburg|49.79|9.95;Ingolstadt|48.77|11.43;Hannover|52.37|9.74;Hamburg|53.55|9.99;Bremen|53.08|8.80;Berlin|52.52|13.40;Leipzig|51.34|12.37;Dresden|51.05|13.74;Kassel|51.31|9.48;Wiesbaden|50.08|8.24;Mainz|50.00|8.27;Saarbrücken|49.24|6.99;Freiburg|47.99|7.85;Heilbronn|49.14|9.22;Pforzheim|48.89|8.70;Offenbach|50.10|8.77;Darmstadt|49.87|8.65;Mönchengladbach|51.19|6.44;Krefeld|51.33|6.56;Aachen|50.78|6.08;Münster|51.96|7.63;Osnabrück|52.28|8.05;Kiel|54.32|10.13;Lübeck|53.87|10.69;Braunschweig|52.27|10.52;Wolfsburg|52.42|10.79;Göttingen|51.54|9.93;Erfurt|50.98|11.03;Chemnitz|50.83|12.92;Magdeburg|52.13|11.63;Rostock|54.09|12.10;Hagen|51.36|7.47;Siegen|50.87|8.02;Koblenz|50.36|7.59;Trier|49.75|6.64;Kaiserslautern|49.44|7.77;Reutlingen|48.49|9.21;Rosenheim|47.86|12.12;Passau|48.57|13.43;Bamberg|49.89|10.89;Viyana|48.21|16.37|wien,vienna;Amsterdam|52.37|4.90;Brüksel|50.85|4.35|brussel,brussels,bruxelles;Zürih|47.38|8.54|zurich,zürich;Paris|48.86|2.35`;
+const TR_CITIES = `İstanbul|41.01|28.98|istanbul;Edirne|41.68|26.56;Kırklareli|41.73|27.22;Tekirdağ|40.98|27.51;Çanakkale|40.15|26.41;Bursa|40.19|29.06;Yalova|40.65|29.27;Kocaeli|40.77|29.92|izmit;Sakarya|40.69|30.43|adapazari;Bilecik|40.14|29.98;Düzce|40.84|31.16;Bolu|40.74|31.61;Zonguldak|41.45|31.79;Bartın|41.63|32.34;Karabük|41.20|32.62;Kastamonu|41.38|33.78;Sinop|42.03|35.15;Ankara|39.93|32.86;Eskişehir|39.78|30.52;Kütahya|39.42|29.98;Balıkesir|39.65|27.88;İzmir|38.42|27.14|izmir;Manisa|38.61|27.43;Aydın|37.85|27.85;Muğla|37.22|28.36;Bodrum|37.03|27.43;Marmaris|36.85|28.27;Fethiye|36.62|29.12;Denizli|37.78|29.09;Uşak|38.68|29.41;Afyonkarahisar|38.76|30.54|afyon;Isparta|37.76|30.55;Burdur|37.72|30.29;Antalya|36.89|30.71;Alanya|36.54|32.00;Konya|37.87|32.48;Karaman|37.18|33.22;Aksaray|38.37|34.03;Nevşehir|38.62|34.71|kapadokya;Niğde|37.97|34.68;Kırşehir|39.15|34.16;Kırıkkale|39.85|33.51;Çankırı|40.60|33.62;Çorum|40.55|34.95;Yozgat|39.82|34.81;Kayseri|38.73|35.48;Sivas|39.75|37.02;Tokat|40.31|36.55;Amasya|40.65|35.83;Samsun|41.29|36.33;Ordu|40.98|37.88;Giresun|40.91|38.39;Trabzon|41.00|39.72;Rize|41.03|40.52;Artvin|41.18|41.82;Gümüşhane|40.46|39.48;Bayburt|40.26|40.22;Erzincan|39.75|39.49;Erzurum|39.90|41.27;Kars|40.60|43.10;Ardahan|41.11|42.70;Iğdır|39.92|44.04;Ağrı|39.72|43.05;Van|38.49|43.38;Muş|38.75|41.50;Bitlis|38.40|42.11;Bingöl|38.88|40.50;Tunceli|39.10|39.55;Elazığ|38.67|39.22;Malatya|38.35|38.31;Adıyaman|37.76|38.28;Kahramanmaraş|37.58|36.94|maras;Osmaniye|37.07|36.25;Adana|37.00|35.32;Mersin|36.81|34.64;Hatay|36.20|36.16|antakya;Gaziantep|37.07|37.38|antep;Kilis|36.72|37.12;Şanlıurfa|37.16|38.79|urfa;Diyarbakır|37.91|40.24;Batman|37.88|41.13;Mardin|37.31|40.74;Siirt|37.93|41.94;Şırnak|37.52|42.46;Hakkari|37.57|43.74`;
+const parseCities = s => s.split(";").map(r=>{ const [n,la,lo,al] = r.split("|"); return {n, la:+la, lo:+lo, al:(al||"").split(",").filter(Boolean)}; });
+const FROM = parseCities(DE_CITIES), TO = parseCities(TR_CITIES);
+const norm = s => (s||"").toLocaleLowerCase("tr").replace(/ı/g,"i").replace(/ß/g,"ss").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9 ]/g," ").trim().split(/\s+/)[0]||"";
+function findCity(list, text){
+  const q = norm(text); if(!q) return null;
+  return list.find(c=>norm(c.n)===q || c.al.some(a=>norm(a)===q)) || null;
+}
+function hav(a,b){ const R=6371, r=Math.PI/180, dLa=(b.la-a.la)*r, dLo=(b.lo-a.lo)*r;
+  const x=Math.sin(dLa/2)**2+Math.cos(a.la*r)*Math.cos(b.la*r)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
+const HUB = { munich:{la:48.14,lo:11.58}, dresden:{la:51.05,lo:13.74} };
+const ENTRY_PT = {la:41.72,lo:26.36}; // Kapıkule
+const ROAD = 1.25; // kuş uçuşu → yol mesafesi katsayısı (yaklaşık)
+
+// Sınır kapıları: base = sakin dönemde tipik bekleme (dk), sens = yoğunluğa duyarlılık
+const GATES = {
+  kapikule:{n:"Kapıkule",o:"Kapitan Andreevo (BG)",city:"Edirne",base:50,sens:1.0,h:"24 saat",tr:true,
+    t:"En yoğun kapı. Yaz tatili başında saatlerce kuyruk olabilir. Otomobil şeritleri ayrı."},
+  hamzabeyli:{n:"Hamzabeyli",o:"Lesovo (BG)",city:"Edirne",base:30,sens:0.6,h:"24 saat",tr:true,
+    t:"Ağırlıklı TIR kapısı ama otomobil de geçer. Kapıkule doluyken iyi alternatif, yaklaşık 15 km kuzeyde."},
+  derekoy:{n:"Dereköy",o:"Malko Tarnovo (BG)",city:"Kırklareli",base:20,sens:0.45,h:"24 saat",tr:true,
+    t:"Genelde en sakin kapı. Burgaz üzerinden gelenler için. Dağ yolu virajlı, gece dikkat."},
+  pazarkule:{n:"Pazarkule",o:"Kastanies (GR)",city:"Edirne",base:25,sens:0.6,h:"Çalışma saatini kontrol et",tr:true,
+    t:"Yunanistan'dan girişte Edirne'ye en yakın kapı. Genellikle sakin."},
+  ipsala:{n:"İpsala",o:"Kipoi (GR)",city:"Edirne",base:40,sens:0.7,h:"24 saat",tr:true,
+    t:"Yunanistan'dan ana giriş. Feribot rotasında İstanbul ve Çanakkale yönüne uygun."},
+  batrovci:{n:"Batrovci / Bajakovo",o:"HR → SRB",base:40,sens:1.0,h:"24 saat",
+    t:"Schengen çıkışı. Yazın cuma-cumartesi uzun kuyruk olur."},
+  horgos:{n:"Röszke / Horgoš",o:"H → SRB",base:45,sens:1.1,h:"24 saat",
+    t:"Schengen çıkışı. Yaz zirvesinde 3–5 saat görülebilir. Alternatif: Tompa/Kelebija."},
+  gradina:{n:"Gradina / Kalotina",o:"SRB → BG",base:35,sens:0.9,h:"24 saat",
+    t:"Schengen girişi. Dimitrovgrad sonrası, Sofya'ya 60 km."},
+  ruse:{n:"Giurgiu / Ruse Köprüsü",o:"RO → BG",base:10,sens:0.3,h:"24 saat",
+    t:"Schengen içi, pasaport kontrolü yok. Köprü geçiş ücreti ödenir."},
+};
+
+const ROUTES = [
+  { id:"srb-slo", name:"Klasik rota: Slovenya – Hırvatistan – Sırbistan",
+    countries:["DE","AT","SI","HR","RS","BG","TR"], hub:"munich", km:1625, ferry:0,
+    via:["Salzburg","Villach","Ljubljana","Zagreb","Belgrad","Niş","Sofya","Kapıkule"],
+    mapsVia:["Salzburg","Villach","Ljubljana","Zagreb","Beograd","Niš","Sofia","Kapıkule"],
+    borders:["batrovci","gradina"], entry:["kapikule","hamzabeyli"],
+    tolls:["AT","AT_TAUERN","SI","HR","RS","BG","TR"],
+    pros:["En bilinen ve en çok tesisi olan rota","Neredeyse tamamı otoyol"],
+    cons:["2 Schengen dışı sınır (Sırbistan)","Tauern ve Karawanken tünel ücretleri","Sırbistan'da AB roaming yok"] },
+  { id:"srb-hu", name:"Macaristan – Sırbistan rotası",
+    countries:["DE","AT","HU","RS","BG","TR"], hub:"munich", km:1735, ferry:0,
+    via:["Linz","Viyana","Budapeşte","Szeged","Belgrad","Niş","Sofya","Kapıkule"],
+    mapsVia:["Linz","Wien","Budapest","Szeged","Beograd","Niš","Sofia","Kapıkule"],
+    borders:["horgos","gradina"], entry:["kapikule","hamzabeyli"],
+    tolls:["AT","HU","RS","BG","TR"],
+    pros:["Avusturya'da tünel ücreti yok","Kuzey ve doğu Almanya'dan çıkışta mantıklı"],
+    cons:["Röszke/Horgoš yazın çok yoğun","2 Schengen dışı sınır","Sırbistan'da AB roaming yok"] },
+  { id:"eu-ro", name:"AB içi rota: Macaristan – Romanya – Bulgaristan",
+    countries:["DE","AT","HU","RO","BG","TR"], hub:"munich", km:1890, ferry:0,
+    via:["Viyana","Budapeşte","Arad","Sibiu","Pitești","Bükreş","Ruse","Haskovo","Kapıkule"],
+    mapsVia:["Wien","Budapest","Arad","Sibiu","Pitești","București","Ruse","Haskovo","Kapıkule"],
+    borders:["ruse"], entry:["kapikule","hamzabeyli","derekoy"],
+    tolls:["AT","HU","RO","RO_BRIDGE","BG","TR"],
+    pros:["Türkiye'ye kadar pasaport kontrolü yok (Romanya ve Bulgaristan 2025'ten beri Schengen'de)","Türkiye sınırına kadar AB roaming geçerli","Yaz zirvesinde sınır kuyruğundan kaçınmak için en iyi seçenek"],
+    cons:["Yaklaşık 250 km daha uzun","Romanya'da otoyolun bazı kesimleri hâlâ yapım aşamasında","Bulgaristan içi yollar yer yer tek şerit"] },
+  { id:"cz", name:"Doğu rotası: Çekya – Slovakya – Macaristan – Sırbistan",
+    countries:["DE","CZ","SK","HU","RS","BG","TR"], hub:"dresden", km:1740, ferry:0,
+    via:["Dresden","Prag","Brno","Bratislava","Budapeşte","Szeged","Belgrad","Niş","Sofya","Kapıkule"],
+    mapsVia:["Dresden","Praha","Brno","Bratislava","Budapest","Szeged","Beograd","Niš","Sofia","Kapıkule"],
+    borders:["horgos","gradina"], entry:["kapikule","hamzabeyli"],
+    tolls:["CZ","SK","HU","RS","BG","TR"],
+    pros:["Berlin, Hamburg, Leipzig, Dresden gibi kuzey ve doğu şehirlerinden en kısa yol","Avusturya'ya hiç girmezsin"],
+    cons:["3 ayrı vinyet (Çekya, Slovakya, Macaristan)","Röszke/Horgoš yazın çok yoğun","Sırbistan'da AB roaming yok"] },
+  { id:"ferry", name:"Feribot rotası: İtalya – Yunanistan",
+    countries:["DE","AT","IT","GR","TR"], hub:"munich", km:1320, ferry:18, entryPt:{la:40.92,lo:26.38},
+    via:["Innsbruck","Brenner","Verona","Ancona","(feribot) İgumenitsa","Selanik","İpsala"],
+    mapsVia:["Innsbruck","Verona","Ancona","Igoumenitsa","Thessaloniki","İpsala"],
+    borders:[], entry:["ipsala","pazarkule"],
+    tolls:["AT","AT_BRENNER","IT","FERRY","GR","TR"],
+    pros:["Yaklaşık 18 saat feribotta dinlenme","Sırbistan yok, Türkiye'ye kadar AB roaming"],
+    cons:["En pahalı seçenek (feribot için önceden rezervasyon)","Feribotta internet çok pahalı","Yaz aylarında biletler erken tükenir"] },
+];
+
+const TOLLS = {
+  DE:{c:"DE",sys:"Ücretsiz",where:"–",price:"0 €",note:"Otomobil için otoyol ücretsiz."},
+  AT:{c:"AT",sys:"Dijital vinyet",where:'<a href="https://shop.asfinag.at" target="_blank" rel="noopener">shop.asfinag.at</a>, ASFINAG uygulaması, sınır benzinlikleri',price:"1 gün ≈ 9 € · 10 gün ≈ 13 € · 2 ay ≈ 32 €",note:"İnternetten alınan vinyet, cayma hakkı nedeniyle <b>18 gün sonra</b> geçerli olur. Son dakikaysa benzinlikten al."},
+  AT_TAUERN:{c:"AT",sys:"Tünel ücreti (Tauern A10, Karawanken A11)",where:"Gişe veya ASFINAG “Digitale Streckenmaut”",price:"Tauern ≈ 15 € · Karawanken ≈ 9 €",note:"Vinyete ek olarak alınır."},
+  AT_BRENNER:{c:"AT",sys:"Brenner otoyolu ücreti (A13)",where:"Gişe veya Digitale Streckenmaut",price:"≈ 12 €",note:"Vinyete ek olarak alınır."},
+  CZ:{c:"CZ",sys:"E-vinyet (dálniční známka)",where:'<a href="https://edalnice.cz" target="_blank" rel="noopener">edalnice.cz</a>',price:"10 gün ≈ 11–12 €",note:"Sadece resmi siteden al."},
+  SK:{c:"SK",sys:"E-vinyet (e-známka)",where:'<a href="https://eznamka.sk" target="_blank" rel="noopener">eznamka.sk</a>',price:"10 gün ≈ 12 €",note:"Bratislava çevre yolu da vinyetli."},
+  SI:{c:"SI",sys:"E-vinyet",where:'<a href="https://evinjeta.dars.si" target="_blank" rel="noopener">evinjeta.dars.si</a>',price:"7 gün ≈ 16 € · 1 ay ≈ 32 €",note:"Sadece resmi siteden al; aracı satan sahte siteler var."},
+  HR:{c:"HR",sys:"Gişe (km başına)",where:"Otoyol gişesi (kart veya €)",price:"Zagreb → Lipovac ≈ 15 €",note:"Elektronik serbest geçiş sistemine geçiş sürüyor; tabelalara dikkat."},
+  HU:{c:"HU",sys:"E-matrica (e-vinyet)",where:'<a href="https://nemzetiutdij.hu" target="_blank" rel="noopener">nemzetiutdij.hu</a>, benzinlikler',price:"10 gün ≈ 16–18 €",note:"Sadece geçiş için il bazlı (vármegye) vinyet daha ucuz olabilir."},
+  RS:{c:"RS",sys:"Gişe",where:"Otoyol gişesi (dinar, € veya kart)",price:"Kuzey sınırı → Bulgaristan ≈ 25–30 €",note:"€ ile ödemede kur kötü, para üstü dinar verilir. Kart en pratiği."},
+  RO:{c:"RO",sys:"Rovinieta (e-vinyet)",where:'<a href="https://www.erovinieta.ro" target="_blank" rel="noopener">erovinieta.ro</a>, sınır benzinlikleri',price:"7 gün ≈ 6 €",note:"Tüm ulusal yollarda zorunlu; kamera ile denetleniyor."},
+  RO_BRIDGE:{c:"RO",sys:"Tuna köprüsü (Giurgiu – Ruse)",where:"Köprü gişesi",price:"≈ 3–6 €",note:"Alternatif: Calafat – Vidin köprüsü."},
+  BG:{c:"BG",sys:"E-vinyet",where:'<a href="https://web.bgtoll.bg" target="_blank" rel="noopener">bgtoll.bg</a>, sınırdaki satış noktaları',price:"Hafta sonu ≈ 5 € · 1 hafta ≈ 8 € · 1 ay ≈ 15 €",note:"Bulgaristan 2026'dan beri euro kullanıyor."},
+  IT:{c:"IT",sys:"Gişe (km başına)",where:"Otoyol gişesi",price:"Brenner → Ancona ≈ 55 €",note:"Biletini al, çıkışta öde. Telepass şeridine girme."},
+  FERRY:{c:"IT",sys:"Feribot (Ancona/Venedik/Bari → İgumenitsa)",where:"Minoan, Anek-Superfast, Grimaldi",price:"Araç + 2 kişi ≈ 300–600 €",note:"Yaz için aylar önce rezervasyon yap."},
+  GR:{c:"GR",sys:"Gişe",where:"Otoyol gişesi (Egnatia Odos)",price:"İgumenitsa → Kipoi ≈ 30 €",note:""},
+  TR:{c:"TR",sys:"HGS etiketi",where:"PTT, Kapıkule'deki satış noktaları, bazı bankalar",price:"Yolun ve köprülerin ücreti etikete yansır",note:"Etiket yoksa geçişten sonra kısa sürede ödenmeli, aksi halde ceza. Osmangazi ve 1915 Çanakkale köprüleri pahalı."},
+};
+
+const SPEED = [
+  ["DE","50","100","–","Sınırsız (tavsiye 130)","0,5","Sınırsız kesimler azalıyor; tabelaya bak."],
+  ["AT","50","100","–","130","0,5","IG-L hava kirliliği bölgelerinde 100. Kış lastiği kuralı (Kasım–Nisan)."],
+  ["CZ","50","90","110","130","0,0","Sıfır tolerans. Farlar gündüz de açık."],
+  ["SK","50","90","–","130","0,0","Sıfır tolerans. Farlar gündüz de açık."],
+  ["SI","50","90","110","130","0,5","Farlar gündüz de açık."],
+  ["HR","50","90","110","130","0,5","24 yaş altı için 0. Kışın gündüz farları açık."],
+  ["HU","50","90","110","130","0,0","Şehir dışında farlar gündüz de açık. Sıfır tolerans."],
+  ["RS","50","80","100","130","0,2","Farlar gündüz de açık. Radar denetimi sık."],
+  ["RO","50","90 (E-yollarda 100)","120","130","0,0","Sıfır tolerans. Şehir dışında farlar açık."],
+  ["BG","50","90","120","140","0,5","Kasım–Mart farlar gündüz de açık."],
+  ["IT","50","90","110","130 (yağmurda 110)","0,5","Tutor ortalama hız kameraları yaygın."],
+  ["GR","50","90","110","130","0,5",""],
+  ["TR","50","90 (bölünmüş yolda 110)","–","120 (bazı kesimlerde 130–140)","0,5","Ortalama hız koridorları (EDS) çok yaygın."],
+];
+
+const ROAM = [
+  ["DE",true,"Kendi hattın."],["AT",true,""],["CZ",true,""],["SK",true,""],["SI",true,""],["HR",true,"Bosna sınırına yakın yollarda Bosna şebekesine dikkat."],
+  ["HU",true,"Szeged civarında Sırp şebekesine bağlanma riski."],
+  ["RS",false,"AB dışı. AB–Batı Balkan anlaşmasıyla ücretler düşürülüyor ama “evdeki gibi” garanti değil. Operatörüne sor."],
+  ["RO",true,""],["BG",true,"Kalotina ve Svilengrad/Edirne çevresinde Sırp veya Türk şebekesine dikkat."],
+  ["IT",true,""],["GR",true,"Kipoi/Kastanies çevresinde Türk şebekesine dikkat."],
+  ["TR",false,"AB dışı. Türk hattı veya eSIM önerilir."],
+];
+const ZONES = [
+  {c:["HR","RS"],n:"Hırvatistan – Sırbistan sınırı",d:"Lipovac / Bajakovo çevresi",lvl:"bad",t:"Sırbistan şebekesi 15–20 km önceden yakalanabilir."},
+  {c:["HU","RS"],n:"Macaristan – Sırbistan sınırı",d:"Szeged / Röszke çevresi",lvl:"bad",t:"Szeged'den itibaren telefon Sırp şebekesine geçebilir."},
+  {c:["RS"],n:"Sırbistan'ın tamamı",d:"~400–500 km",lvl:"bad",t:"AB roaming kuralı geçerli değil. Veriyi kapat ya da paket al."},
+  {c:["RS","BG"],n:"Bulgaristan – Sırbistan sınırı",d:"Dragoman / Kalotina",lvl:"warn",t:"Bulgaristan'a girince elle Bulgar şebekesi seç."},
+  {c:["BG"],n:"Bulgaristan – Türkiye sınırı",d:"Svilengrad, Lesovo, Malko Tarnovo",lvl:"bad",t:"Türk şebekesi (Turkcell, Vodafone, Türk Telekom) 10–20 km önceden gelir."},
+  {c:["GR"],n:"Yunanistan – Türkiye sınırı",d:"Alexandroupoli – Kipoi – Kastanies",lvl:"bad",t:"Evros boyunca Türk şebekesine geçme riski yüksek."},
+  {c:["IT","GR"],n:"Feribot",d:"Adriyatik / İyon denizi",lvl:"bad",t:"Gemi şebekesi AB roaming değildir, MB başına çok pahalı."},
+];
+
+// Yaklaşık ortalama pompa fiyatları (€/L): benzin, dizel
+const FUEL = {
+  DE:[2.20,2.25,"Aral, Shell, Esso, JET","Otoyolda (Autobahn) 20–30 cent pahalı. Bir çıkış sapıp kasabadan al; akşam saatlerinde fiyat düşer."],
+  AT:[1.84,2.14,"OMV, BP, Shell, Eni","Fiyatlar Almanya'dan genelde ucuz: sınırı geçince doldur. Otoyol dışında daha ucuz."],
+  CZ:[1.85,1.95,"Benzina, MOL, Shell","Kartla ödeme her yerde var."],
+  SK:[1.85,1.97,"Slovnaft, OMV, Shell",""],
+  SI:[1.76,1.98,"Petrol, OMV, MOL","Otoyol dışında fiyatlar devlet tarafından sınırlandırılıyor, daha ucuz."],
+  HR:[1.83,1.98,"INA, Tifon, Petrol","Sırbistan öncesi son AB istasyonları Lipovac çevresinde."],
+  HU:[1.73,1.93,"MOL, OMV, Shell","Szeged çevresinde Sırbistan öncesi doldur; Röszke kuyruğunda depo boş kalmasın."],
+  RS:[1.77,2.02,"NIS Petrol, OMV, MOL, Lukoil","Kart kabul ediliyor; € ile ödemede kur kötü. Çok gerekmedikçe az al."],
+  RO:[1.89,2.05,"Petrom, OMV, Rompetrol, MOL","Otoyolun bazı kesimlerinde istasyon az; yarım depoda doldur."],
+  BG:[1.66,1.89,"Shell, OMV, Lukoil, Eko","AB içinde ucuz ülkelerden. Kapıkule öncesi Türkiye fiyatıyla karşılaştır; Türkiye ucuzsa yarım depoyla geç."],
+  IT:[2.07,2.27,"Eni, Q8, IP, Tamoil","“Self” pompa “servito”dan ucuz. Otoyol (autostrada) istasyonları pahalı."],
+  GR:[2.20,2.17,"EKO, Shell, BP, Avin","Benzin pahalı; Türkiye'ye yakın doldurmak yerine az al."],
+  TR:[1.53,1.63,"Opet, Shell, BP, Petrol Ofisi","Fiyat TL ve sık değişir; € karşılığı kura göre. Sınırdan sonraki ilk istasyonlar Edirne girişinde."],
+};
+// Şarj ağları ve ipucu (fiyat bilinçli olarak yok: güvenilir kaynak bulunamadı)
+const EV = {
+  DE:["Ionity, EnBW, Tesla, Aral pulse, Fastned","Otoyol dinlenme tesislerinde (Rastplatz) hızlı şarj çok yaygın."],
+  AT:["Ionity, SMATRICS, Tesla, EnBW, Wien Energie","Tauern ve Brenner rampalarında tüketim artar, yüksek şarjla çık."],
+  CZ:["ČEZ, PRE, Ionity, Tesla","D1 otoyolunda Prag–Brno arası yeterli istasyon var."],
+  SK:["ZSE Drive, GreenWay, Ionity, Tesla",""],
+  SI:["Petrol, Ionity, Tesla, Gremo","Otoyol boyunca Petrol istasyonlarında DC şarj var."],
+  HR:["ELEN (HEP), Ionity, Tesla, Petrol","Sırbistan'a girmeden Zagreb–Slavonski Brod arasında %90'a kadar doldur."],
+  HU:["Mobiliti, MOL Plugee, Ionity, Tesla","Szeged'de doldur; sınır kuyruğunda klima tüketir."],
+  RS:["NIS (Elektro), otel ve AVM şarjları, Tesla (Belgrad çevresi)","<b>Hızlı şarj ağı seyrek.</b> Belgrad ve Niş'te plan yap, istasyonu önceden uygulamadan kontrol et."],
+  RO:["Renovatio, Ionity, Tesla, Kaufland/Lidl","A1 otoyolunda istasyonlar artıyor ama kesintili; yedek plan yap."],
+  BG:["Eldrive, Fines, Petrol, Tesla","Sofya–Plovdiv–Haskovo hattında yeterli. Türkiye öncesi Haskovo'da doldur."],
+  IT:["Free To X, Ionity, Enel X, Tesla","Autostrada istasyonları pahalı, şarj noktası bol."],
+  GR:["ΔΕΗ blue, Tesla, Ionity","Egnatia Odos boyunca istasyon az; Yanya ve Selanik'te doldur."],
+  TR:["ZES, Eşarj, Trugo, Tesla, Voltrun","Fiyat TL bazlı; her ağın uygulaması ayrı. Edirne girişinde hızlı şarj var."],
+};
+// Rota durakları: [ad, harita adı, ülke, hub'dan km]
+const STOPS = {
+  "srb-slo":[["Salzburg","Salzburg","AT",145],["Villach","Villach","AT",330],["Ljubljana","Ljubljana","SI",400],["Zagreb","Zagreb","HR",540],["Lipovac","Lipovac Croatia","HR",780],["Belgrad","Beograd","RS",930],["Niş","Niš","RS",1170],["Sofya","Sofia","BG",1325],["Plovdiv","Plovdiv","BG",1475],["Haskovo","Haskovo","BG",1550],["Svilengrad","Svilengrad","BG",1610]],
+  "srb-hu":[["Linz","Linz","AT",290],["Viyana","Wien","AT",435],["Győr","Győr","HU",555],["Budapeşte","Budapest","HU",680],["Szeged","Szeged","HU",855],["Belgrad","Beograd","RS",1040],["Niş","Niš","RS",1280],["Sofya","Sofia","BG",1435],["Plovdiv","Plovdiv","BG",1585],["Haskovo","Haskovo","BG",1660],["Svilengrad","Svilengrad","BG",1720]],
+  "eu-ro":[["Linz","Linz","AT",290],["Viyana","Wien","AT",435],["Budapeşte","Budapest","HU",680],["Makó","Makó","HU",880],["Arad","Arad","RO",945],["Deva","Deva","RO",1100],["Sibiu","Sibiu","RO",1220],["Pitești","Pitești","RO",1400],["Bükreş","București","RO",1510],["Ruse","Ruse","BG",1580],["Veliko Tarnovo","Veliko Tarnovo","BG",1690],["Haskovo","Haskovo","BG",1800],["Svilengrad","Svilengrad","BG",1875]],
+  "cz":[["Prag","Praha","CZ",150],["Brno","Brno","CZ",355],["Bratislava","Bratislava","SK",485],["Budapeşte","Budapest","HU",685],["Szeged","Szeged","HU",860],["Belgrad","Beograd","RS",1045],["Niş","Niš","RS",1285],["Sofya","Sofia","BG",1440],["Plovdiv","Plovdiv","BG",1590],["Haskovo","Haskovo","BG",1665],["Svilengrad","Svilengrad","BG",1725]],
+  "ferry":[["Innsbruck","Innsbruck","AT",165],["Bolzano","Bolzano","IT",290],["Verona","Verona","IT",430],["Bologna","Bologna","IT",570],["Ancona","Ancona","IT",720],["İgumenitsa","Igoumenitsa","GR",720],["Yanya","Ioannina","GR",800],["Selanik","Thessaloniki","GR",1030],["Kavala","Kavala","GR",1190],["Dedeağaç","Alexandroupoli","GR",1300]],
+};
+
+// Yoğun dönemler. Kaynaklar: schulferien.org (DE, AT), oesterreich.gv.at, rijksoverheid (NL), vlaanderen.be ve FWB takvimi (BE),
+// icalendrier.fr (FR), resmi okul takvimleri (RS, BG, RO, HR, SI, HU, GR), Diyanet takvimi (bayramlar), Python "holidays" kütüphanesi (resmi tatiller).
+const BAYRAM = [["2027-03-08","Ramazan Bayramı (arefe 8 Mart 2027)"],["2027-05-15","Kurban Bayramı (arefe 15 Mayıs 2027)"]];
+// Gurbetçilerin yaşadığı ülkelerde okul tatili başlangıçları: [ülke, başlangıç, tatil, bölge]
+const ORIGIN = [
+  ["DE","2026-10-05","sonbahar tatili","Hessen, Renanya-Pfalz, Saarland"],
+  ["DE","2026-10-12","sonbahar tatili","Aşağı Saksonya, Bremen, Saksonya, Schleswig-Holstein, Türingen"],
+  ["DE","2026-10-15","sonbahar tatili","Mecklenburg-Vorpommern"],
+  ["DE","2026-10-17","sonbahar tatili","Kuzey Ren-Vestfalya"],
+  ["DE","2026-10-19","sonbahar tatili","Berlin, Brandenburg, Hamburg, Saksonya-Anhalt"],
+  ["DE","2026-10-26","sonbahar tatili","Baden-Württemberg"],
+  ["DE","2026-11-02","sonbahar tatili","Bavyera"],
+  ["DE","2026-12-21","yılbaşı tatili","Hamburg, Mecklenburg-Vorpommern, Saarland, Saksonya-Anhalt, Schleswig-Holstein"],
+  ["DE","2026-12-23","yılbaşı tatili","Kuzey Ren-Vestfalya, Baden-Württemberg, Hessen, Aşağı Saksonya ve diğer eyaletler"],
+  ["DE","2027-03-01","bahar tatili","Hamburg"],
+  ["DE","2027-03-22","Paskalya tatili","Kuzey Ren-Vestfalya, Bavyera, Hessen, Aşağı Saksonya, Berlin ve diğer eyaletler"],
+  ["DE","2027-03-30","Paskalya tatili","Baden-Württemberg, Saarland, Schleswig-Holstein"],
+  ["DE","2027-05-18","Pfingsten tatili","Baden-Württemberg, Bavyera"],
+  ["DE","2027-06-28","yaz tatili","Hessen, Renanya-Pfalz, Saarland"],
+  ["DE","2027-07-01","yaz tatili","Berlin, Brandenburg, Hamburg"],
+  ["DE","2027-07-03","yaz tatili","Schleswig-Holstein"],
+  ["DE","2027-07-05","yaz tatili","Mecklenburg-Vorpommern"],
+  ["DE","2027-07-08","yaz tatili","Aşağı Saksonya, Bremen"],
+  ["DE","2027-07-10","yaz tatili","Saksonya, Saksonya-Anhalt, Türingen"],
+  ["DE","2027-07-19","yaz tatili","Kuzey Ren-Vestfalya"],
+  ["DE","2027-07-29","yaz tatili","Baden-Württemberg"],
+  ["DE","2027-08-02","yaz tatili","Bavyera"],
+  ["AT","2026-10-27","sonbahar tatili","tüm eyaletler"],
+  ["AT","2026-12-24","yılbaşı tatili","tüm eyaletler"],
+  ["AT","2027-02-01","sömestr tatili","Viyana, Aşağı Avusturya"],
+  ["AT","2027-02-08","sömestr tatili","Burgenland, Karintiya"],
+  ["AT","2027-02-15","sömestr tatili","Yukarı Avusturya, Salzburg, Styria, Tirol, Vorarlberg"],
+  ["AT","2027-03-20","Paskalya tatili","tüm eyaletler"],
+  ["AT","2027-07-03","yaz tatili","Viyana, Aşağı Avusturya, Burgenland"],
+  ["AT","2027-07-10","yaz tatili","diğer eyaletler"],
+  ["NL","2026-10-10","sonbahar tatili","Kuzey bölgesi"],
+  ["NL","2026-10-17","sonbahar tatili","Orta ve Güney bölgeleri"],
+  ["NL","2026-12-19","yılbaşı tatili","tüm bölgeler"],
+  ["NL","2027-02-13","bahar tatili","Güney bölgesi"],
+  ["NL","2027-02-20","bahar tatili","Kuzey ve Orta bölgeleri"],
+  ["NL","2027-04-24","mayıs tatili","tüm bölgeler"],
+  ["NL","2027-07-10","yaz tatili","Kuzey bölgesi"],
+  ["NL","2027-07-17","yaz tatili","Orta bölge"],
+  ["NL","2027-07-24","yaz tatili","Güney bölgesi"],
+  ["BE","2026-10-19","sonbahar tatili","Valonya ve Brüksel (Fransızca okullar)"],
+  ["BE","2026-11-02","sonbahar tatili","Flaman bölgesi"],
+  ["BE","2026-12-21","yılbaşı tatili","tüm ülke"],
+  ["BE","2027-02-08","karnaval tatili","Flaman bölgesi"],
+  ["BE","2027-02-22","karnaval tatili","Valonya ve Brüksel"],
+  ["BE","2027-03-29","Paskalya tatili","Flaman bölgesi"],
+  ["BE","2027-04-26","bahar tatili","Valonya ve Brüksel"],
+  ["BE","2027-07-01","yaz tatili","Flaman bölgesi"],
+  ["BE","2027-07-03","yaz tatili","Valonya ve Brüksel"],
+  ["FR","2026-10-17","Toussaint tatili","tüm bölgeler"],
+  ["FR","2026-12-19","Noel tatili","tüm bölgeler"],
+  ["FR","2027-07-03","yaz tatili","tüm bölgeler"],
+];
+const ORIGIN_N = {DE:"Almanya",AT:"Avusturya",NL:"Hollanda",BE:"Belçika",FR:"Fransa"};
+// Rotadaki Balkan ülkelerinde okul tatilleri (yerel trafik): [ülke, başlangıç, bitiş, tatil]
+const LOCAL = [
+  ["RS","2026-12-31","2027-01-18","kış tatili"],["RS","2027-04-30","2027-05-04","bahar tatili"],["RS","2027-06-14","2027-08-31","yaz tatili"],
+  ["BG","2026-10-31","2026-11-02","sonbahar tatili"],["BG","2026-12-24","2027-01-03","Noel tatili"],["BG","2027-01-30","2027-02-02","kış tatili"],["BG","2027-04-03","2027-04-11","bahar tatili"],["BG","2027-06-16","2027-08-31","yaz tatili (başlangıç sınıfa göre değişir)"],
+  ["RO","2026-10-24","2026-11-01","sonbahar tatili"],["RO","2026-12-23","2027-01-10","kış tatili"],["RO","2027-04-24","2027-05-04","bahar tatili"],["RO","2027-06-19","2027-09-05","yaz tatili"],
+  ["HR","2026-12-24","2027-01-06","Noel tatili"],["HR","2027-02-22","2027-02-26","sömestr tatili"],["HR","2027-03-25","2027-04-02","bahar tatili"],["HR","2027-06-16","2027-09-03","yaz tatili"],
+  ["SI","2026-10-26","2026-10-30","sonbahar tatili"],["SI","2026-12-25","2027-01-01","yılbaşı tatili"],["SI","2027-02-15","2027-02-26","kış tatili (bölgeye göre)"],["SI","2027-04-27","2027-04-30","mayıs tatili"],["SI","2027-06-28","2027-08-31","yaz tatili"],
+  ["HU","2026-10-23","2026-11-01","sonbahar tatili"],["HU","2026-12-19","2027-01-03","kış tatili"],["HU","2027-03-25","2027-04-04","bahar tatili"],["HU","2027-06-19","2027-08-31","yaz tatili"],
+  ["GR","2026-12-24","2027-01-07","Noel tatili"],["GR","2027-04-26","2027-05-10","Paskalya tatili"],["GR","2027-06-16","2027-09-10","yaz tatili"],
+  ["AT","2026-10-27","2026-10-31","sonbahar tatili"],["AT","2026-12-24","2027-01-06","yılbaşı tatili"],["AT","2027-03-20","2027-03-29","Paskalya tatili"],["AT","2027-07-03","2027-09-12","yaz tatili"],
+];
+const PUB = {"DE":[["2026-12-25","Noel"],["2026-12-26","Noel'in ikinci günü"],["2027-01-01","Yılbaşı"],["2027-03-26","Kutsal Cuma"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-06","Göğe Yükseliş Günü"],["2027-05-17","Pentekost Pazartesisi"]],"AT":[["2026-10-26","Ulusal Gün"],["2026-11-01","Azizler Günü"],["2026-12-08","Lekesiz Gebelik Günü"],["2026-12-25","Noel"],["2026-12-26","Aziz Stephen Günü"],["2027-01-01","Yılbaşı"],["2027-01-06","Epifani"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-06","Göğe Yükseliş Günü"],["2027-05-17","Pentekost Pazartesisi"],["2027-05-27","Corpus Christi"],["2027-08-15","Meryem'in Göğe Kabulü"]],"SI":[["2026-10-31","Reform Günü"],["2026-11-01","Ölüleri Anma Günü"],["2026-12-25","Noel"],["2026-12-26","Bağımsızlık ve Birlik Günü"],["2027-01-01","Yılbaşı"],["2027-01-02","Yılbaşı"],["2027-02-08","Prešeren Günü (kültür bayramı)"],["2027-03-28","Paskalya"],["2027-03-29","Paskalya Pazartesisi"],["2027-04-27","İşgale Karşı Ayaklanma Günü"],["2027-05-01","İşçi Bayramı"],["2027-05-02","İşçi Bayramı"],["2027-05-16","Pentekost"],["2027-06-25","Devlet Günü"],["2027-08-15","Meryem'in Göğe Kabulü"]],"HR":[["2026-11-01","Azizler Günü"],["2026-11-18","Anma Günü"],["2026-12-25","Noel"],["2026-12-26","Aziz Stephen Günü"],["2027-01-01","Yılbaşı"],["2027-01-06","Epifani"],["2027-03-28","Paskalya"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-27","Corpus Christi"],["2027-05-30","Devlet Günü"],["2027-06-22","Antifaşist Mücadele Günü"],["2027-08-05","Zafer ve Vatan Şükran Günü"],["2027-08-15","Meryem'in Göğe Kabulü"]],"HU":[["2026-10-23","Ulusal Gün"],["2026-11-01","Azizler Günü"],["2026-12-24","Köprü tatili"],["2026-12-25","Noel"],["2026-12-26","Noel'in ikinci günü"],["2027-01-01","Yılbaşı"],["2027-03-15","Ulusal Gün"],["2027-03-26","Kutsal Cuma"],["2027-03-28","Paskalya"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-16","Pentekost"],["2027-05-17","Pentekost Pazartesisi"],["2027-08-20","Devletin Kuruluşu Günü"]],"RS":[["2026-11-11","Ateşkes Günü"],["2027-01-01","Yılbaşı"],["2027-01-02","Yılbaşı"],["2027-01-07","Ortodoks Noeli"],["2027-02-15","Devlet Günü"],["2027-02-16","Devlet Günü"],["2027-04-30","Kutsal Cuma"],["2027-05-01","Kutsal Cumartesi ve İşçi Bayramı"],["2027-05-02","Paskalya ve İşçi Bayramı"],["2027-05-03","Paskalya Pazartesisi"],["2027-05-04","İşçi Bayramı (telafi tatili)"]],"RO":[["2026-11-30","Aziz Andreas Günü"],["2026-12-01","Ulusal Gün"],["2026-12-25","Noel"],["2026-12-26","Noel"],["2027-01-01","Yılbaşı"],["2027-01-02","Yılbaşı"],["2027-01-06","Epifani"],["2027-01-07","Vaftizci Yahya Günü"],["2027-01-24","Romen Prensliklerinin Birleşmesi"],["2027-04-30","Kutsal Cuma"],["2027-05-01","İşçi Bayramı"],["2027-05-02","Paskalya"],["2027-05-03","Paskalya"],["2027-06-01","Çocuk Günü"],["2027-06-20","Pentekost"],["2027-06-21","Pentekost"],["2027-08-15","Meryem'in Göğe Kabulü"]],"BG":[["2026-12-24","Noel Arifesi"],["2026-12-25","Noel"],["2026-12-26","Noel"],["2026-12-28","Noel (telafi tatili)"],["2027-01-01","Yılbaşı"],["2027-03-03","Kurtuluş Günü"],["2027-04-30","Kutsal Cuma"],["2027-05-01","Kutsal Cumartesi ve İşçi Bayramı"],["2027-05-02","Paskalya"],["2027-05-03","Paskalya"],["2027-05-04","İşçi Bayramı (telafi tatili)"],["2027-05-06","Aziz Georgi Günü"],["2027-05-24","Slav Alfabesi ve Kültür Günü"]],"CZ":[["2026-10-28","Çekoslovakya'nın Kuruluşu"],["2026-11-17","Özgürlük ve Demokrasi Günü"],["2026-12-24","Noel Arifesi"],["2026-12-25","Noel"],["2026-12-26","Noel'in ikinci günü"],["2027-01-01","Yılbaşı"],["2027-03-26","Kutsal Cuma"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-08","Zafer Günü"],["2027-07-05","Kiril ve Metodius Günü"],["2027-07-06","Jan Hus Günü"]],"SK":[["2026-11-01","Azizler Günü"],["2026-12-24","Noel Arifesi"],["2026-12-25","Noel"],["2026-12-26","Noel'in ikinci günü"],["2027-01-01","Slovak Cumhuriyeti'nin Kuruluşu"],["2027-01-06","Epifani ve Ortodoks Noeli"],["2027-03-26","Kutsal Cuma"],["2027-03-29","Paskalya Pazartesisi"],["2027-05-01","İşçi Bayramı"],["2027-05-08","Faşizme Karşı Zafer Günü"],["2027-07-05","Kiril ve Metodius Günü"],["2027-08-29","Slovak Ulusal Ayaklanması Günü"]],"IT":[["2026-11-01","Azizler Günü"],["2026-12-08","Lekesiz Gebelik Günü"],["2026-12-25","Noel"],["2026-12-26","Aziz Stephen Günü"],["2027-01-01","Yılbaşı"],["2027-01-06","Epifani"],["2027-03-28","Paskalya"],["2027-03-29","Paskalya Pazartesisi"],["2027-04-25","Kurtuluş Günü"],["2027-05-01","İşçi Bayramı"],["2027-06-02","Cumhuriyet Günü"],["2027-08-15","Meryem'in Göğe Kabulü"]],"GR":[["2026-10-28","Ohi Günü"],["2026-12-25","Noel"],["2026-12-26","Meryem Ana Günü"],["2027-01-01","Yılbaşı"],["2027-01-06","Epifani"],["2027-03-15","Temiz Pazartesi"],["2027-03-25","Bağımsızlık Günü"],["2027-04-30","Kutsal Cuma"],["2027-05-01","İşçi Bayramı"],["2027-05-03","Paskalya Pazartesisi"],["2027-05-04","İşçi Bayramı (telafi tatili)"],["2027-06-21","Pentekost Pazartesisi"],["2027-08-15","Meryem'in Göğe Kabulü"]],"TR":[["2026-10-29","Cumhuriyet Bayramı"],["2027-01-01","Yılbaşı"],["2027-03-09","Ramazan Bayramı"],["2027-03-10","Ramazan Bayramı"],["2027-03-11","Ramazan Bayramı"],["2027-04-23","Ulusal Egemenlik ve Çocuk Bayramı"],["2027-05-01","Emek ve Dayanışma Günü"],["2027-05-16","Kurban Bayramı"],["2027-05-17","Kurban Bayramı"],["2027-05-18","Kurban Bayramı"],["2027-05-19","Atatürk'ü Anma, Gençlik ve Spor Bayramı; Kurban Bayramı"],["2027-07-15","Demokrasi ve Millî Birlik Günü"],["2027-08-30","Zafer Bayramı"]]};
+const BIG = /Kuzey Ren|Baden|Bavyera|Hessen|Aşağı Saksonya/;
+const dayDiff = (a,b) => Math.round((new Date(a+"T12:00:00")-new Date(b+"T12:00:00"))/864e5);
+const trDate = s => new Date(s+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"long"});
+// Sınıra varış günü yoğun bir döneme denk geliyor mu? (gurbetçi trafiği: bekleme tahminini artırır)
+function busyAll(dateStr){
+  const items=[]; let f=1;
+  if(!dateStr) return {f,items};
+  for(const [a,n] of BAYRAM){ const d=dayDiff(a,dateStr); if(d>=0 && d<=6){ items.push(`${n} öncesi: Türkiye'ye gidiş çok yoğun olur.`); f=Math.max(f,1.5); } }
+  for(const [cc,st,n,reg] of ORIGIN){ const d=dayDiff(dateStr,st); if(d>=0 && d<=4){
+    const big = cc==="DE" && BIG.test(reg), summer = /yaz/.test(n);
+    f = Math.max(f, big ? 1.6 : summer ? 1.4 : 1.2);
+    items.push(`${ORIGIN_N[cc]}'da ${n} ${trDate(st)} günü başlıyor (${reg}).`); } }
+  if(items.length>1) f=Math.min(2, f+0.1*(items.length-1));
+  return {f,items};
+}
+function busy(dateStr){ const b=busyAll(dateStr); return b.items.length ? {f:b.f, t:b.items.join(" ")+" İlk günlerde sınırda uzun kuyruk beklenir."} : null; }
+// Seçilen rotada, yolculuk günlerine denk gelen resmi ve okul tatilleri
+function routeHolidays(r, dateStr){
+  const out=[]; if(!dateStr) return out;
+  const cs = ["DE",...r.countries.filter(c=>c!=="DE")];
+  for(const c of cs){
+    const lo = c==="TR" ? 0 : -2, hi = c==="TR" ? 2 : 0;
+    const ph = (PUB[c]||[]).filter(([dt])=>{ const d=dayDiff(dt,dateStr); return d>=lo && d<=hi; });
+    if(ph.length) out.push({c, kind:"pub", t: ph.map(([dt,n])=>`${trDate(dt)} ${n}`).join(", ")});
+    for(const [cc,st,en,n] of LOCAL){ if(cc!==c) continue; const a=dayDiff(dateStr,st), b=dayDiff(en,dateStr); if(a>=-1 && b>=0) out.push({c, kind:"school", t:`Okullarda ${n} (${trDate(st)} – ${trDate(en)})`}); }
+  }
+  return out;
+}
+
+// Acil numaralar ve Türk temsilcilikleri
+const SOS = {
+  AT:["112 (polis 133, ambulans 144)","ÖAMTC 120 · ARBÖ 123",[["Viyana Büyükelçiliği","https://vienna-emb.mfa.gov.tr"],["Salzburg Başkonsolosluğu","https://salzburg-cg.mfa.gov.tr"]]],
+  SI:["112 (polis 113)","AMZS 1987",[["Lübliyana Büyükelçiliği","https://ljubljana-emb.mfa.gov.tr"]]],
+  HR:["112 (polis 192)","HAK 1987",[["Zagreb Büyükelçiliği","https://zagreb-emb.mfa.gov.tr"]]],
+  HU:["112","MAK 188",[["Budapeşte Büyükelçiliği","https://budapest-emb.mfa.gov.tr"]]],
+  RS:["112 · polis 192 · itfaiye 193 · ambulans 194","AMSS 1987",[["Belgrad Büyükelçiliği","https://belgrade-emb.mfa.gov.tr"]]],
+  CZ:["112 (polis 158)","ÚAMK 1230",[["Prag Büyükelçiliği","https://prague-emb.mfa.gov.tr"]]],
+  SK:["112 (polis 158)","",[["Bratislava Büyükelçiliği","https://bratislava-emb.mfa.gov.tr"]]],
+  RO:["112","",[["Bükreş Büyükelçiliği","https://bucharest-emb.mfa.gov.tr"]]],
+  BG:["112","",[["Sofya Büyükelçiliği","https://sofia-emb.mfa.gov.tr"],["Burgaz Başkonsolosluğu","https://burgas-cg.mfa.gov.tr"]]],
+  IT:["112","ACI 803 116",[["Roma Büyükelçiliği","https://rome-emb.mfa.gov.tr"],["Milano Başkonsolosluğu","https://milan-cg.mfa.gov.tr"]]],
+  GR:["112 (polis 100)","ELPA 10400",[["Atina Büyükelçiliği","https://athens-emb.mfa.gov.tr"],["Selanik Başkonsolosluğu","https://thessaloniki-cg.mfa.gov.tr"]]],
+  TR:["112 (tüm acil durumlar)","",[]],
+  DE:["112 (polis 110)","ADAC +49 89 22 22 22",[]],
+};
+
+const CHECK = [
+  "Pasaport veya kimlik (Türk vatandaşları için nüfus cüzdanı; yabancılar için pasaport)",
+  "Araç ruhsatı ve kendi aracın değilse noter onaylı vekaletname",
+  "Yeşil kart: <b>TR</b> ve <b>SRB</b> harfleri üstü çizili olmamalı",
+  "Avusturya vinyetini 18 günden önce internetten al ya da benzinlikten al",
+  "Slovenya / Macaristan / Romanya / Bulgaristan vinyetleri (rotana göre)",
+  "Sırbistan için kart veya biraz dinar",
+  "Reflektif yelek (her kişi için), üçgen, ilk yardım çantası",
+  "Kış ise kış lastiği (Avusturya, Slovenya, Hırvatistan, Sırbistan, Romanya kuralları)",
+  "Haritaları çevrimdışı indir, mobil veri ayarını kontrol et",
+  "Almanya ve Avusturya sınırlarında geçici kontroller olabilir, kimliği el altında tut",
+  "Türkiye'de HGS etiketi almayı planla",
+];
+
+document.documentElement.lang = "tr";
+const $ = s => document.querySelector(s);
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem("silayolu:"+k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem("silayolu:"+k, JSON.stringify(v)); }catch(e){} }
+};
+
+// Kontroller
+FROM.forEach(c=>$("#fromList").append(new Option(c.n)));
+TO.forEach(c=>$("#toList").append(new Option(c.n)));
+for(let h=0;h<24;h++) $("#hour").add(new Option(String(h).padStart(2,"0")+":00",h));
+const today = new Date();
+const defDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()+3);
+const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+$("#from").value = store.get("loc_from","");
+$("#to").value = store.get("loc_to","");
+$("#date").value = store.get("date", iso(defDate));
+$("#hour").value = store.get("hour","14");
+let selRoute = store.get("route",null);
+
+function places(){
+  const ft=$("#from").value.trim(), tt=$("#to").value.trim();
+  const f=findCity(FROM,ft), t=findCity(TO,tt);
+  return { f, t, ft, tt, fName: f?f.n:ft, tName: t?t.n:tt, fMaps: ft, tMaps: tt,
+           fPt: f||{la:48.14,lo:11.58}, tPt: t||{la:41.01,lo:28.98} };
+}
+function hints(){
+  const P = places(), fh=$("#fromHint"), th=$("#toHint");
+  fh.className="hint "+(P.f?"ok":P.ft?"warn":""); th.className="hint "+(P.t?"ok":P.tt?"warn":"");
+  fh.textContent = P.f ? "✓ "+P.f.n : P.ft ? "Listede yok; mesafe Münih'ten tahmin edilir" : "";
+  th.textContent = P.t ? "✓ "+P.t.n : P.tt ? "Listede yok; mesafe İstanbul'dan tahmin edilir" : "";
+}
+
+// Yoğunluk katsayısı (Türkiye yönü)
+const MONTH = [0.8,0.7,0.8,1.0,1.0,1.8,3.0,2.2,1.0,0.9,0.8,1.4];
+const DAY = [1.2,0.9,0.9,0.95,1.0,1.3,1.5]; // Pazar..Cumartesi
+function hourF(h){ return h<6?0.55 : h<10?0.9 : h<18?1.3 : h<22?1.1 : 0.8; }
+function load(){
+  const d = new Date(($("#date").value||iso(defDate))+"T12:00:00");
+  const b = busy($("#date").value);
+  const f = MONTH[d.getMonth()] * DAY[d.getDay()] * hourF(+$("#hour").value) * (b?b.f:1);
+  return isNaN(f)?1:f;
+}
+const obs = store.get("obs",{});
+const estWait = id => Math.round(GATES[id].base*(1+(load()-1)*GATES[id].sens)/5)*5;
+function gateWait(id){
+  if(obs[id]!=null && obs[id]!=="") return {m:+obs[id], own:true};
+  return {m:estWait(id), own:false};
+}
+const fmtMin = m => m<60 ? m+" dk" : Math.floor(m/60)+" sa"+(m%60?" "+String(m%60).padStart(2,"0")+" dk":"");
+const level = m => m<=45?"good":m<=120?"warn":"bad";
+const plate = c => `<span class="plate${C[c].eu?"":" noeu"}" title="${C[c].n}${C[c].eu?"":" – AB roaming yok"}">${C[c].p}</span>`;
+const fmtDate = s => { const d=new Date(s+"T12:00:00"); return isNaN(d)?"":d.toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"}); };
+const mapsUrl = (P,r) => "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="+encodeURIComponent(P.fMaps)+"&destination="+encodeURIComponent(P.tMaps)+"&waypoints="+encodeURIComponent(r.mapsVia.join("|"));
+
+function computeRoutes(){
+  const P = places();
+  return ROUTES.map(r=>{
+    const startKm = hav(P.fPt, HUB[r.hub]) * ROAD;
+    const endKm = hav(r.entryPt||ENTRY_PT, P.tPt) * ROAD;
+    const km = Math.round((r.km + startKm + endKm)/5)*5;
+    const drive = km/85*60;
+    const transit = r.borders.reduce((s,b)=>s+gateWait(b).m,0);
+    const entries = r.entry.map(e=>({id:e,...gateWait(e)})).sort((a,b)=>a.m-b.m);
+    const best = entries[0];
+    const total = drive + transit + best.m + r.ferry*60;
+    return {r,km,drive,transit,best,entries,total,startKm,endKm};
+  }).sort((a,b)=>a.total-b.total);
+}
+
+// ADIM 2
+function renderRoutes(){
+  const P = places(), list = computeRoutes();
+  $("#tripLine").textContent = `${P.fName} → ${P.tName} · sınırda ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`;
+  $("#routes").innerHTML = list.map((x,i)=>{
+    const r=x.r, nonEU = r.countries.filter(c=>!C[c].eu && c!=="TR").map(c=>C[c].n);
+    return `<article class="panel route compact${i===0?" best":""}">
+      <div class="stack" style="gap:6px;min-width:0">
+        ${i===0?'<span class="chip good" style="align-self:flex-start">Önerilen</span>':""}
+        <h3>${r.name}</h3>
+        <div class="plates">${r.countries.map(plate).join('<span class="arrow">›</span>')}</div>
+      </div>
+      <div class="meta">
+        <span class="big">${fmtMin(Math.round(x.total/5)*5)}</span>
+        <span class="muted small num">≈ ${x.km.toLocaleString("tr-TR")} km${r.ferry?" + feribot":""}</span>
+      </div>
+      <div class="body">
+        <div class="chips">
+          ${r.borders.length?`<span class="chip ${level(x.transit+x.best.m)}">Sınırlarda ≈ ${fmtMin(x.transit+x.best.m)}</span>`:`<span class="chip ${level(x.best.m)}">Sadece Türkiye sınırı ≈ ${fmtMin(x.best.m)}</span>`}
+          ${nonEU.length?`<span class="chip bad">${nonEU.join(", ")}'da AB interneti yok</span>`:`<span class="chip good">Türkiye'ye kadar AB interneti</span>`}
+        </div>
+        <div class="row"><button class="btn${i===0?"":" ghost"}" type="button" data-pick="${r.id}">Bu rotayı seç</button></div>
+      </div>
+    </article>`;
+  }).join("");
+}
+
+// ADIM 3
+function renderPlan(){
+  const list = computeRoutes();
+  const x = list.find(v=>v.r.id===selRoute) || list[0];
+  const r = x.r; selRoute = r.id;
+  const P = places(), inR = c => r.countries.includes(c);
+  const nonEU = r.countries.filter(c=>!C[c].eu && c!=="TR").map(c=>C[c].n);
+  $("#planHead").innerHTML = `
+    <div class="stephead"><div class="stack" style="gap:4px;min-width:0"><h2>${P.fName} → ${P.tName}</h2><p class="small muted">${r.name}</p></div>
+      <div class="meta" style="text-align:right"><span class="big num" style="font-size:22px;font-weight:700">${fmtMin(Math.round(x.total/5)*5)}</span><span class="small muted num"> ≈ ${x.km.toLocaleString("tr-TR")} km</span></div></div>
+    <p class="small muted">${[P.fName,...r.via,P.tName].join(" → ")}</p>
+    <div class="plates">${r.countries.map(plate).join('<span class="arrow">›</span>')}</div>
+    <ul class="clean small">${r.pros.concat(r.cons).map(t=>`<li>${t}</li>`).join("")}</ul>
+    <div class="row"><a class="btn" href="${mapsUrl(P,r)}" target="_blank" rel="noopener">Google Haritalar'da aç</a>
+      <a class="btn ghost" id="waShare" href="https://wa.me/" target="_blank" rel="noopener">WhatsApp'ta paylaş</a>
+      <button class="btn ghost" type="button" id="copyPlan">Planı kopyala</button><span id="shareMsg" role="status"></span></div>
+    <textarea id="planTextBox" readonly hidden style="width:100%;min-height:180px;font:inherit;font-size:13px"></textarea>`;
+  const b = busy($("#date").value);
+  $("#busyNote").hidden = !b; $("#busyNote").innerHTML = b ? `<b>Yoğun dönem.</b> ${b.t} Bekleme tahminleri buna göre artırıldı; mümkünse 1–2 gün kaydır ya da gece saatlerinde geç.` : "";
+  const hol = routeHolidays(r, $("#date").value);
+  const bAll = busyAll($("#date").value);
+  $("#sumHol").textContent = (bAll.items.length + hol.length) ? `${bAll.items.length + hol.length} not` : "Özel bir tatil yok";
+  $("#holList").innerHTML = (bAll.items.map(t=>`<div class="row small"><span class="chip warn">Gurbetçi trafiği</span><span style="flex:1 1 220px">${t}</span></div>`).join("")
+    + hol.map(h=>`<div class="row small">${plate(h.c)}<span class="chip ${h.kind==="pub"?"bad":"good"}">${h.kind==="pub"?"Resmi tatil":"Okul tatili"}</span><span style="flex:1 1 220px">${C[h.c].n} · ${h.t}</span></div>`).join(""))
+    || '<p class="small">Seçtiğin günlerde rotanda resmi veya okul tatili görünmüyor.</p>';
+  $("#sosRows").innerHTML = ["DE",...r.countries.filter(c=>c!=="DE")].map(c=>{ const v=SOS[c]; return `<tr><td>${plate(c)} ${C[c].n}</td><td class="small num">${v[0]}</td><td class="small num">${v[1]||"–"}</td>
+    <td class="small">${v[2].length?v[2].map(m=>`<a href="${m[1]}" target="_blank" rel="noopener">${m[0]}</a>`).join("<br>"):"–"}</td></tr>`; }).join("");
+
+  // Gümrük: yalnızca bu rotanın kapıları
+  const entries = x.entries;
+  $("#sumGate").textContent = `Önerilen giriş: ${GATES[x.best.id].n} ≈ ${fmtMin(x.best.m)}`;
+  $("#gatesTR").innerHTML = entries.map((e,i)=>gateCard(e.id, i===0)).join("");
+  $("#gatesTransitWrap").hidden = !r.borders.length;
+  $("#gatesTransit").innerHTML = r.borders.filter(b=>b!=="ruse").concat(r.borders.includes("ruse")?["ruse"]:[]).map(b=>gateCard(b,false)).join("");
+  $("#liveLinks").innerHTML = (r.borders.includes("horgos")?`, <a href="https://www.police.hu/hu/hirek-es-informaciok/hatarinfo" target="_blank" rel="noopener">Macaristan Határinfo</a>`:"")
+    + (inR("RS")?`, <a href="https://www.amss.org.rs" target="_blank" rel="noopener">AMSS Sırbistan</a>`:"");
+
+  // Vinyet
+  const tolls = r.tolls.map(k=>TOLLS[k]);
+  $("#sumToll").textContent = [...new Set(tolls.map(t=>C[t.c].n))].join(", ");
+  $("#tollRows").innerHTML = tolls.map(t=>`<tr><td>${plate(t.c)} ${C[t.c].n}</td><td>${t.sys}</td><td class="small">${t.where}</td><td class="small num">${t.price}</td><td class="small">${t.note}</td></tr>`).join("");
+
+  // Hız
+  const sp = SPEED.filter(s=>inR(s[0]));
+  $("#sumSpeed").textContent = "Otoyol: " + sp.map(s=>C[s[0]].p+" "+(s[4].startsWith("Sınırsız")?"∞":s[4].split(" ")[0])).join(" · ");
+  $("#speedRows").innerHTML = sp.map(s=>`<tr><td><span class="plate">${C[s[0]].p}</span> ${C[s[0]].n}</td>
+    <td class="n">${s[1]}</td><td class="n">${s[2]}</td><td class="n">${s[3]}</td>
+    <td class="n">${s[4].startsWith("Sınırsız")?s[4]:`<span class="speed">${s[4].split(" ")[0]}</span> ${s[4].split(" ").slice(1).join(" ")}`}</td>
+    <td class="n">${s[5]}</td><td class="small">${s[6]}</td></tr>`).join("");
+
+  // İnternet
+  $("#sumRoam").textContent = nonEU.length ? `${nonEU.join(", ")} ve Türkiye'de AB roaming yok` : "Türkiye'ye kadar AB roaming geçerli";
+  $("#roamRows").innerHTML = ROAM.filter(v=>inR(v[0])).map(v=>`<tr><td>${plate(v[0])} ${C[v[0]].n}</td>
+    <td><span class="chip ${v[1]?"good":"bad"}">${v[1]?"Geçerli":"Geçerli değil"}</span></td><td class="small">${v[2]}</td></tr>`).join("");
+  $("#roamZones").innerHTML = ZONES.filter(z=>z.c.every(inR)).map(z=>`<article class="panel gate"><div class="head"><h3>${z.n}</h3><span class="chip ${z.lvl}">${z.lvl==="bad"?"Yüksek risk":"Dikkat"}</span></div><p class="small muted">${z.d}</p><p class="small">${z.t}</p></article>`).join("");
+  $("#tipRS").hidden = !inR("RS"); $("#tipFerry").hidden = !r.ferry;
+
+  renderFuel(r, inR, x);
+  $("#waShare").href = "https://wa.me/?text="+encodeURIComponent(planText(P,x));
+  renderChecklist(r);
+}
+
+let lastPlanText = "";
+function planText(P,x){
+  const r=x.r, ev=$("#fuel").value==="e";
+  const vig=[...new Set(r.tolls.map(k=>TOLLS[k]).map(t=>C[t.c].n+": "+t.sys))];
+  const lines = [
+    `Sıla Yolu planı: ${P.fName} → ${P.tName}`,
+    `Rota: ${r.name}`,
+    `Güzergâh: ${[P.fName,...r.via,P.tName].join(" → ")}`,
+    `Süre ≈ ${fmtMin(Math.round(x.total/5)*5)}, ≈ ${x.km.toLocaleString("tr-TR")} km`,
+    `Sınıra varış: ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`,
+    `Türkiye girişi: ${GATES[x.best.id].n} (tahmini bekleme ≈ ${fmtMin(x.best.m)})`,
+    `Ücretler: ${vig.join("; ")}`,
+    lastStops.length ? `${ev?"Şarj":"Yakıt"} molaları: ${lastStops.join(", ")}` : "",
+    `Acil: 112 · Konsolosluk Çağrı Merkezi +90 312 292 29 29`,
+    `Harita: ${mapsUrl(P,r)}`,
+  ].filter(Boolean);
+  return lastPlanText = lines.join("\n");
+}
+let lastStops = [];
+document.addEventListener("click",async e=>{
+  if(!e.target.closest("#copyPlan")) return;
+  const msg=$("#shareMsg");
+  try{ await navigator.clipboard.writeText(lastPlanText); msg.textContent="Plan kopyalandı"; }
+  catch(err){ const t=$("#planTextBox"); t.hidden=false; t.value=lastPlanText; t.focus(); t.select(); msg.textContent="Metni seçip kopyala"; }
+});
+function gateCard(id, recommended){
+  const g=GATES[id], w=gateWait(id), lv=level(w.m);
+  const pct=Math.min(100, w.m/300*100);
+  return `<article class="panel gate">
+    <div class="head"><h3>${g.n}</h3><span class="num" style="font-weight:700;color:var(--${lv})">${fmtMin(w.m)}</span></div>
+    <div class="bar" aria-hidden="true"><i style="width:${pct}%;background:var(--${lv})"></i></div>
+    ${recommended?'<span class="chip good" style="align-self:flex-start">Önerilen giriş</span>':""}
+    <p class="small muted">${g.o}${g.city?" · "+g.city:""} · ${g.h}</p>
+    <p class="small">${g.t}</p>
+    <div class="row small">
+      <label for="obs-${id}" style="flex-direction:row;align-items:center;gap:8px">Gözlem (dk)
+        <input id="obs-${id}" data-obs="${id}" type="number" min="0" step="5" style="max-width:90px" placeholder="${estWait(id)}" value="${obs[id]??""}">
+      </label>
+      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(g.n.split(" /")[0]+" sınır kapısı")}" target="_blank" rel="noopener">Haritada gör</a>
+    </div>
+  </article>`;
+}
+document.addEventListener("change",e=>{
+  const id=e.target.dataset&&e.target.dataset.obs;
+  if(!id) return;
+  const v=e.target.value.trim();
+  if(v==="") delete obs[id]; else obs[id]=Math.max(0,+v);
+  store.set("obs",obs); renderPlan();
+});
+
+const stationsLink = q => "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("benzin istasyonu "+q);
+const evLink = q => "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("EV charging station "+q);
+// Günlük güncellenen fiyatlar (paylaşılan veritabanından)
+let PRICE_DATES = {};
+function applyPrices(d){
+  if(!d) return;
+  const ok = v => typeof v==="number" && isFinite(v) && v>0.1 && v<10;
+  Object.entries(d.fuel||{}).forEach(([c,v])=>{ if(FUEL[c] && Array.isArray(v) && ok(v[0]) && ok(v[1])){ FUEL[c][0]=v[0]; FUEL[c][1]=v[1]; } });
+  PRICE_DATES = (d.dates && typeof d.dates==="object") ? d.dates : {};
+  if(typeof d.updated==="string") $("#priceStamp").textContent = "Fiyatlar en son "+d.updated.slice(0,10).split("-").reverse().join(".")+" tarihinde güncellendi.";
+}
+(async()=>{
+  try{
+    const res = await fetch("prices.json", {cache:"no-cache"});
+    if(!res.ok) return;
+    applyPrices(await res.json());
+    if(!$("#step3").hidden) renderPlan();
+  }catch(e){}
+})();
+
+function renderFuel(r, inR, x){
+  const ev = $("#fuel").value==="e", fi = $("#fuel").value==="d"?1:0;
+  const range = Math.max(100, +$("#range").value||(ev?400:650)), cons = Math.max(3, +$("#cons").value||(ev?18:7));
+  const price = c => FUEL[c][fi];
+  $("#priceNote").hidden = ev;
+  $("#fuelTitle").textContent = ev ? "Şarj molaları" : "Yakıt molaları";
+  $("#tableTitle").textContent = ev ? "Rotandaki şarj ağları" : "Rotandaki ortalama fiyatlar";
+  $("#planNote").textContent = ev ? `Tam şarjla çıktığını, ${range} km menzil ile her molada %10'dan %80'e şarj ettiğini varsayar (yaklaşık 30–40 dk).`
+    : `Dolu depoyla çıktığını, ${range} km menzil ile deponun dörtte biri kalmadan doldurduğunu varsayar.`;
+  $("#evLinks").hidden = !ev;
+  const P = places();
+  const pts = [{n:P.fName,q:P.fMaps,c:"DE",km:0},
+    ...STOPS[r.id].map(s=>({n:s[0],q:s[1],c:s[2],km:x.startKm+s[3]})),
+    {n:GATES[r.entry[0]].city||"Edirne",q:GATES[r.entry[0]].city||"Edirne",c:"TR",km:x.startKm+r.km+20},
+    {n:P.tName,q:P.tMaps,c:"TR",km:x.startKm+r.km+x.endKm}];
+  if(pts[pts.length-1].km < pts[pts.length-2].km) pts.splice(pts.length-2,1);
+  let cost=0; for(let i=1;i<pts.length;i++) cost += (pts[i].km-pts[i-1].km)*cons/100*price(pts[i].c);
+  const usable = ev ? range*0.7 : range*0.75, plan=[]; let last=0, cap = ev ? range*0.9 : usable;
+  for(let i=1;i<pts.length-1;i++){
+    if(pts[i+1].km - last > cap){ plan.push(pts[i]); last = pts[i].km; cap = usable; }
+  }
+  lastStops = plan.map(s=>s.n);
+  const total = pts[pts.length-1].km;
+  const cheapest = [...new Set(r.countries)].filter(c=>FUEL[c]).sort((a,b)=>price(a)-price(b))[0];
+  $("#sumFuel").textContent = ev ? `${plan.length} şarj molası, ≈ ${fmtMin(plan.length*35)}` : `${plan.length} mola · tahmini ${Math.round(cost/5)*5} €`;
+  $("#fuelSummary").innerHTML = `<span class="chip">${ev?"Enerji":"Yakıt"} ≈ ${Math.round(total*cons/100)} ${ev?"kWh":"L"}</span>
+    ${ev ? "" : `<span class="chip warn">Tahmini maliyet ≈ ${Math.round(cost/5)*5} €</span><span class="chip good">En ucuz: ${C[cheapest].n}</span>`}
+    ${ev && r.countries.includes("RS") ? '<span class="chip bad">Sırbistan\'da hızlı şarj seyrek</span>' : ""}`;
+  $("#fuelPlan").innerHTML = plan.length ? plan.map((s,i)=>{
+    const f = ev ? [null,null,EV[s.c][0],EV[s.c][1]] : FUEL[s.c];
+    return `<article class="panel route">
+      <div class="stack" style="gap:4px;min-width:0"><h3><span class="rank">${i+1}.</span> ${s.n}</h3>
+      <p class="small muted">${C[s.c].n} · ≈ ${Math.round(s.km/5)*5}. km · ${f[2]}</p></div>
+      ${ev ? "" : `<div class="meta"><span class="big">${price(s.c).toFixed(2).replace(".",",")} €</span><span class="small muted">${fi?"dizel":"benzin"}${PRICE_DATES[s.c]?", "+PRICE_DATES[s.c]:""}</span></div>`}
+      <div class="body">${f[3]?`<p class="small">${f[3]}</p>`:""}
+      <div class="row"><a class="btn ghost" href="${ev?evLink(s.q):stationsLink(s.q)}" target="_blank" rel="noopener">${ev?"Şarj istasyonlarını gör":"İstasyonları gör"}</a></div></div>
+    </article>`;}).join("") : `<p class="small">Menzilin bu rota için yeterli, yolda ${ev?"şarja":"yakıt almaya"} gerek yok.</p>`;
+  $("#fuelHead").innerHTML = ev ? "<tr><th>Ülke</th><th>Şarj ağları</th><th>İpucu</th></tr>"
+    : "<tr><th>Ülke</th><th>Benzin</th><th>Dizel</th><th>Yaygın markalar</th><th>İpucu</th></tr>";
+  if(ev){ $("#fuelRows").innerHTML = Object.keys(EV).filter(inR).map(c=>`<tr><td>${plate(c)} ${C[c].n}</td>
+    <td class="small">${EV[c][0]}</td><td class="small">${EV[c][1]}</td></tr>`).join(""); return; }
+  $("#fuelRows").innerHTML = Object.keys(FUEL).filter(inR).map(c=>`<tr><td>${plate(c)} ${C[c].n}</td>
+    <td class="n">${FUEL[c][0].toFixed(2).replace(".",",")} €</td><td class="n">${FUEL[c][1].toFixed(2).replace(".",",")} €</td>
+    <td class="small">${FUEL[c][2]}</td><td class="small">${FUEL[c][3]}${PRICE_DATES[c]?`<br><span class="muted">Fiyat tarihi: ${PRICE_DATES[c]}</span>`:""}</td></tr>`).join("");
+}
+
+// Kontrol listesi: rotaya göre
+const done = store.get("check",{});
+function renderChecklist(r){
+  const vig = [...new Set(r.tolls.map(k=>TOLLS[k]).filter(t=>/vinyet|matrica|Rovinieta|e-známka|dálniční/i.test(t.sys)).map(t=>C[t.c].n))];
+  const items = [
+    "Pasaport veya kimlik",
+    "Araç ruhsatı; araç senin değilse noter onaylı vekaletname",
+    `Yeşil kart: ${inList(r,"RS")?"<b>TR</b> ve <b>SRB</b>":"<b>TR</b>"} harfleri üstü çizili olmamalı`,
+    vig.length ? `Vinyetler: ${vig.join(", ")}` : null,
+    r.countries.includes("AT") ? "Avusturya vinyetini internetten en az 18 gün önce al, ya da yolda benzinlikten al" : null,
+    r.ferry ? "Feribot biletini önceden al" : null,
+    inList(r,"RS") ? "Sırbistan için kart veya biraz dinar" : null,
+    "Reflektif yelek (her kişi için), üçgen, ilk yardım çantası",
+    "Haritaları çevrimdışı indir, mobil veri ayarını kontrol et",
+    "Türkiye'de HGS etiketi almayı planla",
+  ].filter(Boolean);
+  $("#sumCheck").textContent = `${items.filter(t=>done[t]).length} / ${items.length}`;
+  $("#checklist").innerHTML = items.map((c,i)=>`<label class="check" for="ck${i}"><input type="checkbox" id="ck${i}" data-ck="${c.replace(/"/g,"&quot;")}" ${done[c]?"checked":""}><span>${c}</span></label>`).join("");
+}
+const inList = (r,c) => r.countries.includes(c);
+$("#checklist").addEventListener("change",e=>{ const k=e.target.dataset.ck; if(k==null)return; done[k]=e.target.checked; store.set("check",done); renderPlan(); });
+
+// Araç
+const isEV = () => $("#fuel").value==="e";
+function loadVeh(){ const e=isEV(); $("#range").value = store.get(e?"range_e":"range", e?"400":"650"); $("#cons").value = store.get(e?"cons_e":"cons", e?"18":"7");
+  $("#consLbl").textContent = e ? "Tüketim (kWh/100 km)" : "Tüketim (L/100 km)"; }
+$("#fuel").value = store.get("fuel","b"); loadVeh();
+$("#fuel").addEventListener("change",()=>{ store.set("fuel",$("#fuel").value); loadVeh(); });
+["range","cons"].forEach(id=>$("#"+id).addEventListener("change",()=>store.set(isEV()?id+"_e":id,$("#"+id).value)));
+["from","to"].forEach(id=>$("#"+id).addEventListener("input",()=>{ store.set("loc_"+id,$("#"+id).value); hints(); }));
+function dateHint(){ const b=busy($("#date").value); $("#dateHint").className="hint"+(b?" busy":""); const all=busyAll($("#date").value).items; $("#dateHint").textContent = b ? "Yoğun dönem: "+all[0]+(all.length>1?` Ayrıca ${all.length-1} tatil başlangıcı daha var.`:"") : ""; }
+["date","hour"].forEach(id=>$("#"+id).addEventListener("change",()=>{ store.set(id,$("#"+id).value); dateHint(); }));
+
+// Adımlar
+function go(n){
+  [1,2,3].forEach(i=>$("#step"+i).hidden = i!==n);
+  $("#tagline").hidden = n!==1;
+  store.set("step",n);
+  window.scrollTo({top:0});
+}
+$("#step1").addEventListener("submit",e=>{
+  e.preventDefault();
+  const P = places();
+  if(!P.ft || !P.tt){
+    if(!P.ft){ $("#fromHint").className="hint err"; $("#fromHint").textContent="Nereden çıkacağını yaz"; }
+    if(!P.tt){ $("#toHint").className="hint err"; $("#toHint").textContent="Nereye gideceğini yaz"; }
+    (P.ft?$("#to"):$("#from")).focus(); return;
+  }
+  selRoute = null; store.set("route",null);
+  renderRoutes(); go(2);
+});
+document.addEventListener("click",e=>{
+  const p=e.target.closest("[data-pick]");
+  if(p){ selRoute=p.dataset.pick; store.set("route",selRoute); renderPlan(); go(3); return; }
+  const s=e.target.closest("[data-step]");
+  if(s){ const n=+s.dataset.step; if(n===2) renderRoutes(); go(n); }
+});
+
+// Başlangıç: kayıtlı plan varsa oradan devam et
+hints(); dateHint();
+const P0 = places(), st = store.get("step",1);
+if(P0.ft && P0.tt && st===3 && selRoute){ renderPlan(); go(3); }
+else if(P0.ft && P0.tt && st===2){ renderRoutes(); go(2); }
+else go(1);
+</script>
+
+</body>
+</html>
