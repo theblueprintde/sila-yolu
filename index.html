@@ -131,11 +131,11 @@ details.sec .inner{padding:0 16px 16px}
         <input id="to" list="toList" autocomplete="off" placeholder="Şehir veya adres, ör. Ankara">
         <span id="toHint" class="hint"></span>
       </label>
-      <label for="date">Sınıra varış günü
+      <label for="date">Yola çıkış günü
         <input id="date" type="date">
         <span id="dateHint" class="hint"></span>
       </label>
-      <label for="hour">Yaklaşık saat
+      <label for="hour">Çıkış saati
         <select id="hour"></select>
       </label>
       <label for="fuel">Araç
@@ -609,7 +609,7 @@ const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+
 $("#from").value = store.get("loc_from","");
 $("#to").value = store.get("loc_to","");
 $("#date").value = store.get("date", iso(defDate));
-$("#hour").value = store.get("hour","14");
+$("#hour").value = store.get("dephour","8");
 let selRoute = store.get("route",null);
 
 function places(){
@@ -629,10 +629,14 @@ function hints(){
 const MONTH = [0.8,0.7,0.8,1.0,1.0,1.8,3.0,2.2,1.0,0.9,0.8,1.4];
 const DAY = [1.2,0.9,0.9,0.95,1.0,1.3,1.5]; // Pazar..Cumartesi
 function hourF(h){ return h<6?0.55 : h<10?0.9 : h<18?1.3 : h<22?1.1 : 0.8; }
+// Kullanıcı yola çıkış zamanını girer; sınıra varış her rota için mesafeden hesaplanır.
+let atTime = null; // bekleme tahmininin yapıldığı an (sınıra varış)
+function depTime(){ const d = new Date(($("#date").value||iso(defDate))+"T00:00:00"); d.setHours(+$("#hour").value||0); return isNaN(d)?new Date():d; }
+const addMin = (d,m) => new Date(d.getTime()+m*60000);
 function load(){
-  const d = new Date(($("#date").value||iso(defDate))+"T12:00:00");
-  const b = busy($("#date").value);
-  const f = MONTH[d.getMonth()] * DAY[d.getDay()] * hourF(+$("#hour").value) * (b?b.f:1);
+  const d = atTime || depTime();
+  const b = busy(iso(d));
+  const f = MONTH[d.getMonth()] * DAY[d.getDay()] * hourF(d.getHours()) * (b?b.f:1);
   return isNaN(f)?1:f;
 }
 const obs = store.get("obs",{});
@@ -644,6 +648,7 @@ function gateWait(id){
 const fmtMin = m => m<60 ? m+" dk" : Math.floor(m/60)+" sa"+(m%60?" "+String(m%60).padStart(2,"0")+" dk":"");
 const level = m => m<=45?"good":m<=120?"warn":"bad";
 const plate = c => `<span class="plate${C[c].eu?"":" noeu"}" title="${C[c].n}${C[c].eu?"":" – AB roaming yok"}">${C[c].p}</span>`;
+const fmtDT = d => d.toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"})+" "+String(d.getHours()).padStart(2,"0")+":00 civarı";
 const fmtDate = s => { const d=new Date(s+"T12:00:00"); return isNaN(d)?"":d.toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"}); };
 const mapsUrl = (P,r) => "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="+encodeURIComponent(P.fMaps)+"&destination="+encodeURIComponent(P.tMaps)+"&waypoints="+encodeURIComponent(r.mapsVia.join("|"));
 
@@ -654,18 +659,21 @@ function computeRoutes(){
     const endKm = hav(r.entryPt||ENTRY_PT, P.tPt) * ROAD;
     const km = Math.round((r.km + startKm + endKm)/5)*5;
     const drive = km/85*60;
+    const toEntry = (r.km + startKm)/85*60 + r.ferry*60; // çıkıştan Türkiye sınırına (molalar hariç)
+    atTime = addMin(depTime(), toEntry);
     const transit = r.borders.reduce((s,b)=>s+gateWait(b).m,0);
+    const arr = atTime = addMin(depTime(), toEntry + transit);
     const entries = r.entry.map(e=>({id:e,...gateWait(e)})).sort((a,b)=>a.m-b.m);
     const best = entries[0];
     const total = drive + transit + best.m + r.ferry*60;
-    return {r,km,drive,transit,best,entries,total,startKm,endKm};
+    return {r,km,drive,transit,best,entries,total,startKm,endKm,arr};
   }).sort((a,b)=>a.total-b.total);
 }
 
 // ADIM 2
 function renderRoutes(){
   const P = places(), list = computeRoutes();
-  $("#tripLine").textContent = `${P.fName} → ${P.tName} · sınırda ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`;
+  $("#tripLine").textContent = `${P.fName} → ${P.tName} · çıkış ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`;
   $("#routes").innerHTML = list.map((x,i)=>{
     const r=x.r, nonEU = r.countries.filter(c=>!C[c].eu && c!=="TR").map(c=>C[c].n);
     return `<article class="panel route compact${i===0?" best":""}">
@@ -681,6 +689,7 @@ function renderRoutes(){
       <div class="body">
         <div class="chips">
           ${r.borders.length?`<span class="chip ${level(x.transit+x.best.m)}">Sınırlarda ≈ ${fmtMin(x.transit+x.best.m)}</span>`:`<span class="chip ${level(x.best.m)}">Sadece Türkiye sınırı ≈ ${fmtMin(x.best.m)}</span>`}
+          <span class="chip">Türkiye sınırına varış ≈ ${fmtDT(x.arr)}</span>
           ${nonEU.length?`<span class="chip bad">${nonEU.join(", ")}'da AB interneti yok</span>`:`<span class="chip good">Türkiye'ye kadar AB interneti</span>`}
         </div>
         <div class="row"><button class="btn${i===0?"":" ghost"}" type="button" data-pick="${r.id}">Bu rotayı seç</button></div>
@@ -693,23 +702,25 @@ function renderRoutes(){
 function renderPlan(){
   const list = computeRoutes();
   const x = list.find(v=>v.r.id===selRoute) || list[0];
-  const r = x.r; selRoute = r.id;
+  const r = x.r; selRoute = r.id; atTime = x.arr;
+  const arrDay = iso(x.arr);
   const P = places(), inR = c => r.countries.includes(c);
   const nonEU = r.countries.filter(c=>!C[c].eu && c!=="TR").map(c=>C[c].n);
   $("#planHead").innerHTML = `
     <div class="stephead"><div class="stack" style="gap:4px;min-width:0"><h2>${P.fName} → ${P.tName}</h2><p class="small muted">${r.name}</p></div>
       <div class="meta" style="text-align:right"><span class="big num" style="font-size:22px;font-weight:700">${fmtMin(Math.round(x.total/5)*5)}</span><span class="small muted num"> ≈ ${x.km.toLocaleString("tr-TR")} km</span></div></div>
     <p class="small muted">${[P.fName,...r.via,P.tName].join(" → ")}</p>
+    <p class="small">Türkiye sınırına varış ≈ <b>${fmtDT(x.arr)}</b> <span class="muted">(molalar hariç; bekleme tahminleri bu saate göre)</span></p>
     <div class="plates">${r.countries.map(plate).join('<span class="arrow">›</span>')}</div>
     <ul class="clean small">${r.pros.concat(r.cons).map(t=>`<li>${t}</li>`).join("")}</ul>
     <div class="row"><a class="btn" href="${mapsUrl(P,r)}" target="_blank" rel="noopener">Google Haritalar'da aç</a>
       <a class="btn ghost" id="waShare" href="https://wa.me/" target="_blank" rel="noopener">WhatsApp'ta paylaş</a>
       <button class="btn ghost" type="button" id="copyPlan">Planı kopyala</button><span id="shareMsg" role="status"></span></div>
     <textarea id="planTextBox" readonly hidden style="width:100%;min-height:180px;font:inherit;font-size:13px"></textarea>`;
-  const b = busy($("#date").value);
+  const b = busy(arrDay);
   $("#busyNote").hidden = !b; $("#busyNote").innerHTML = b ? `<b>Yoğun dönem.</b> ${b.t} Bekleme tahminleri buna göre artırıldı; mümkünse 1–2 gün kaydır ya da gece saatlerinde geç.` : "";
-  const hol = routeHolidays(r, $("#date").value);
-  const bAll = busyAll($("#date").value);
+  const hol = routeHolidays(r, arrDay);
+  const bAll = busyAll(arrDay);
   $("#sumHol").textContent = (bAll.items.length + hol.length) ? `${bAll.items.length + hol.length} not` : "Özel bir tatil yok";
   $("#holList").innerHTML = (bAll.items.map(t=>`<div class="row small"><span class="chip warn">Gurbetçi trafiği</span><span style="flex:1 1 220px">${t}</span></div>`).join("")
     + hol.map(h=>`<div class="row small">${plate(h.c)}<span class="chip ${h.kind==="pub"?"bad":"good"}">${h.kind==="pub"?"Resmi tatil":"Okul tatili"}</span><span style="flex:1 1 220px">${C[h.c].n} · ${h.t}</span></div>`).join(""))
@@ -760,7 +771,8 @@ function planText(P,x){
     `Rota: ${r.name}`,
     `Güzergâh: ${[P.fName,...r.via,P.tName].join(" → ")}`,
     `Süre ≈ ${fmtMin(Math.round(x.total/5)*5)}, ≈ ${x.km.toLocaleString("tr-TR")} km`,
-    `Sınıra varış: ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`,
+    `Yola çıkış: ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`,
+    `Türkiye sınırına varış ≈ ${fmtDT(x.arr)} (molalar hariç)`,
     `Türkiye girişi: ${GATES[x.best.id].n} (tahmini bekleme ≈ ${fmtMin(x.best.m)})`,
     `Ücretler: ${vig.join("; ")}`,
     lastStops.length ? `${ev?"Şarj":"Yakıt"} molaları: ${lastStops.join(", ")}` : "",
@@ -898,7 +910,7 @@ $("#fuel").addEventListener("change",()=>{ store.set("fuel",$("#fuel").value); l
 ["range","cons"].forEach(id=>$("#"+id).addEventListener("change",()=>store.set(isEV()?id+"_e":id,$("#"+id).value)));
 ["from","to"].forEach(id=>$("#"+id).addEventListener("input",()=>{ store.set("loc_"+id,$("#"+id).value); hints(); }));
 function dateHint(){ const b=busy($("#date").value); $("#dateHint").className="hint"+(b?" busy":""); const all=busyAll($("#date").value).items; $("#dateHint").textContent = b ? "Yoğun dönem: "+all[0]+(all.length>1?` Ayrıca ${all.length-1} tatil başlangıcı daha var.`:"") : ""; }
-["date","hour"].forEach(id=>$("#"+id).addEventListener("change",()=>{ store.set(id,$("#"+id).value); dateHint(); }));
+["date","hour"].forEach(id=>$("#"+id).addEventListener("change",()=>{ store.set(id==="hour"?"dephour":id,$("#"+id).value); dateHint(); }));
 
 // Adımlar
 function go(n){
