@@ -37,6 +37,12 @@ a{color:var(--accent)}
 .small{font-size:13px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 header.top{display:flex;flex-direction:column;gap:8px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;align-self:flex-start;max-width:100%}
+.seg label{display:flex;flex-direction:row;align-items:center;padding:8px 14px;cursor:pointer;font-weight:700;font-size:14px;color:var(--muted);text-transform:none;letter-spacing:0}
+.seg label+label{border-left:1px solid var(--line)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--accent);color:var(--accent-ink)}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
 .sign{display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:var(--accent-ink);padding:6px 12px;border-radius:6px;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;align-self:flex-start}
 .sign .e{background:var(--eroad);color:#fff;border:2px solid #fff;border-radius:4px;padding:0 6px;font-family:var(--mono)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
@@ -122,6 +128,10 @@ details.sec .inner{padding:0 16px 16px}
 
   <!-- ADIM 1: Yolculuk -->
   <form id="step1" class="panel stack" novalidate>
+    <div class="seg" role="radiogroup" aria-label="Yön">
+      <label><input type="radio" name="dir" value="go" checked>Türkiye'ye gidiş</label>
+      <label><input type="radio" name="dir" value="back">Türkiye'den dönüş</label>
+    </div>
     <div class="fields">
       <label for="from">Nereden?
         <input id="from" list="fromList" autocomplete="off" placeholder="Şehir veya adres, ör. Köln">
@@ -305,20 +315,26 @@ const ROAD = 1.25; // kuş uçuşu → yol mesafesi katsayısı (yaklaşık)
 // Sınır kapıları: base = sakin dönemde tipik bekleme (dk), sens = yoğunluğa duyarlılık
 const GATES = {
   kapikule:{n:"Kapıkule",o:"Kapitan Andreevo (BG)",city:"Edirne",base:50,sens:1.0,h:"24 saat",tr:true,
+    tb:"Dönüşte ağustos sonu, eylül başı ve bayram sonrasında en yoğun kapı. Gece geçişi genelde daha hızlı.",
     t:"En yoğun kapı. Yaz tatili başında saatlerce kuyruk olabilir. Otomobil şeritleri ayrı."},
   hamzabeyli:{n:"Hamzabeyli",o:"Lesovo (BG)",city:"Edirne",base:30,sens:0.6,h:"24 saat",tr:true,
+    tb:"Kapıkule doluyken iyi alternatif, yaklaşık 15 km kuzeyde. Ağırlıklı TIR kapısı ama otomobil de geçer.",
     t:"Ağırlıklı TIR kapısı ama otomobil de geçer. Kapıkule doluyken iyi alternatif, yaklaşık 15 km kuzeyde."},
   derekoy:{n:"Dereköy",o:"Malko Tarnovo (BG)",city:"Kırklareli",base:20,sens:0.45,h:"24 saat",tr:true,
+    tb:"Genelde en sakin çıkış. Burgaz yönüne çıkar. Dağ yolu virajlı, gece dikkat.",
     t:"Genelde en sakin kapı. Burgaz üzerinden gelenler için. Dağ yolu virajlı, gece dikkat."},
   pazarkule:{n:"Pazarkule",o:"Kastanies (GR)",city:"Edirne",base:25,sens:0.6,h:"Çalışma saatini kontrol et",tr:true,
     t:"Yunanistan'dan girişte Edirne'ye en yakın kapı. Genellikle sakin."},
   ipsala:{n:"İpsala",o:"Kipoi (GR)",city:"Edirne",base:40,sens:0.7,h:"24 saat",tr:true,
     t:"Yunanistan'dan ana giriş. Feribot rotasında İstanbul ve Çanakkale yönüne uygun."},
   batrovci:{n:"Batrovci / Bajakovo",o:"HR → SRB",base:40,sens:1.0,h:"24 saat",
+    tb:"Dönüşte Schengen girişi: AB'ye girerken kontrol daha sıkı. Ağustos sonunda uzun kuyruk olur.",
     t:"Schengen çıkışı. Yazın cuma-cumartesi uzun kuyruk olur."},
   horgos:{n:"Röszke / Horgoš",o:"H → SRB",base:45,sens:1.1,h:"24 saat",
+    tb:"Dönüşte Schengen girişi. Ağustos sonu ve eylül başında 3–5 saati bulabilir. Alternatif: Kelebija/Tompa.",
     t:"Schengen çıkışı. Yaz zirvesinde 3–5 saat görülebilir. Alternatif: Tompa/Kelebija."},
   gradina:{n:"Gradina / Kalotina",o:"SRB → BG",base:35,sens:0.9,h:"24 saat",
+    tb:"Dönüşte Schengen çıkışı (Bulgaristan → Sırbistan). Genelde girişten daha hızlı.",
     t:"Schengen girişi. Dimitrovgrad sonrası, Sofya'ya 60 km."},
   ruse:{n:"Giurgiu / Ruse Köprüsü",o:"RO → BG",base:10,sens:0.3,h:"24 saat",
     t:"Schengen içi, pasaport kontrolü yok. Köprü geçiş ücreti ödenir."},
@@ -464,6 +480,38 @@ const STOPS = {
 
 // Yoğun dönemler. Kaynaklar: schulferien.org (DE, AT), oesterreich.gv.at, rijksoverheid (NL), vlaanderen.be ve FWB takvimi (BE),
 // icalendrier.fr (FR), resmi okul takvimleri (RS, BG, RO, HR, SI, HU, GR), Diyanet takvimi (bayramlar), Python "holidays" kütüphanesi (resmi tatiller).
+// Bayramların son günü (dönüş dalgası bundan sonra)
+const BAYRAM_END = [["2027-03-11","Ramazan Bayramı"],["2027-05-19","Kurban Bayramı"]];
+// Okul tatili bitişleri (son tatil günü), dönüş yoğunluğu için: [ülke, bitiş, tatil, bölge]. Kaynak: schulferien.org (DE); NL/AT/BE resmi takvim.
+const RETURN = [
+  ["DE","2026-10-16","sonbahar tatili","Renanya-Pfalz, Saarland"],
+  ["DE","2026-10-17","sonbahar tatili","Hessen"],
+  ["DE","2026-10-24","sonbahar tatili","Aşağı Saksonya, Bremen, Saksonya, Schleswig-Holstein, Türingen, Mecklenburg-Vorpommern"],
+  ["DE","2026-10-30","sonbahar tatili","Brandenburg, Hamburg, Saksonya-Anhalt"],
+  ["DE","2026-10-31","sonbahar tatili","Kuzey Ren-Vestfalya, Berlin, Baden-Württemberg"],
+  ["DE","2026-11-06","sonbahar tatili","Bavyera"],
+  ["DE","2027-01-02","yılbaşı tatili","Berlin, Brandenburg, Mecklenburg-Vorpommern, Saksonya, Saksonya-Anhalt, Türingen"],
+  ["DE","2027-01-06","yılbaşı tatili","Kuzey Ren-Vestfalya, Schleswig-Holstein"],
+  ["DE","2027-01-08","yılbaşı tatili","Bavyera, Renanya-Pfalz"],
+  ["DE","2027-01-09","yılbaşı tatili","Baden-Württemberg, Aşağı Saksonya, Bremen"],
+  ["DE","2027-01-12","yılbaşı tatili","Hessen"],
+  ["DE","2027-04-02","Paskalya tatili","Bavyera, Berlin, Hessen, Renanya-Pfalz, Saksonya"],
+  ["DE","2027-04-03","Paskalya tatili","Kuzey Ren-Vestfalya, Baden-Württemberg, Aşağı Saksonya, Brandenburg, Bremen, Türingen"],
+  ["DE","2027-05-29","Pfingsten tatili","Baden-Württemberg, Bavyera"],
+  ["DE","2027-08-06","yaz tatili","Hessen, Renanya-Pfalz, Saarland"],
+  ["DE","2027-08-14","yaz tatili","Berlin, Brandenburg, Mecklenburg-Vorpommern, Schleswig-Holstein"],
+  ["DE","2027-08-18","yaz tatili","Aşağı Saksonya, Bremen"],
+  ["DE","2027-08-20","yaz tatili","Saksonya, Saksonya-Anhalt, Türingen"],
+  ["DE","2027-08-31","yaz tatili","Kuzey Ren-Vestfalya"],
+  ["DE","2027-09-11","yaz tatili","Baden-Württemberg"],
+  ["DE","2027-09-13","yaz tatili","Bavyera"],
+  ["AT","2027-09-05","yaz tatili","Viyana, Aşağı Avusturya, Burgenland"],
+  ["AT","2027-09-12","yaz tatili","diğer eyaletler"],
+  ["NL","2027-08-22","yaz tatili","Kuzey bölgesi"],
+  ["NL","2027-08-29","yaz tatili","Orta bölge"],
+  ["NL","2027-09-05","yaz tatili","Güney bölgesi"],
+  ["BE","2027-08-31","yaz tatili","Flaman bölgesi"],
+];
 const BAYRAM = [["2027-03-08","Ramazan Bayramı (arefe 8 Mart 2027)"],["2027-05-15","Kurban Bayramı (arefe 15 Mayıs 2027)"]];
 // Gurbetçilerin yaşadığı ülkelerde okul tatili başlangıçları: [ülke, başlangıç, tatil, bölge]
 const ORIGIN = [
@@ -539,6 +587,15 @@ const trDate = s => new Date(s+"T12:00:00").toLocaleDateString("tr-TR",{day:"num
 function busyAll(dateStr){
   const items=[]; let f=1;
   if(!dateStr) return {f,items};
+  if(isBack()){
+    for(const [a,n] of BAYRAM_END){ const d=dayDiff(dateStr,a); if(d>=-1 && d<=5){ items.push(`${n} sonrası: Avrupa'ya dönüş çok yoğun olur.`); f=Math.max(f,1.5); } }
+    for(const [cc,en,n,reg] of RETURN){ const d=dayDiff(en,dateStr); if(d>=0 && d<=5){
+      const big = cc==="DE" && BIG.test(reg), summer = /yaz/.test(n);
+      f = Math.max(f, big ? 1.6 : summer ? 1.4 : 1.2);
+      items.push(`${ORIGIN_N[cc]}'da ${n} ${trDate(en)} günü bitiyor (${reg}).`); } }
+    if(items.length>1) f=Math.min(2, f+0.1*(items.length-1));
+    return {f,items};
+  }
   for(const [a,n] of BAYRAM){ const d=dayDiff(a,dateStr); if(d>=0 && d<=6){ items.push(`${n} öncesi: Türkiye'ye gidiş çok yoğun olur.`); f=Math.max(f,1.5); } }
   for(const [cc,st,n,reg] of ORIGIN){ const d=dayDiff(dateStr,st); if(d>=0 && d<=4){
     const big = cc==="DE" && BIG.test(reg), summer = /yaz/.test(n);
@@ -547,13 +604,13 @@ function busyAll(dateStr){
   if(items.length>1) f=Math.min(2, f+0.1*(items.length-1));
   return {f,items};
 }
-function busy(dateStr){ const b=busyAll(dateStr); return b.items.length ? {f:b.f, t:b.items.join(" ")+" İlk günlerde sınırda uzun kuyruk beklenir."} : null; }
+function busy(dateStr){ const b=busyAll(dateStr); return b.items.length ? {f:b.f, t:b.items.join(" ")+(isBack()?" Tatilin son günlerinde sınırda uzun kuyruk beklenir.":" İlk günlerde sınırda uzun kuyruk beklenir.")} : null; }
 // Seçilen rotada, yolculuk günlerine denk gelen resmi ve okul tatilleri
 function routeHolidays(r, dateStr){
   const out=[]; if(!dateStr) return out;
   const cs = ["DE",...r.countries.filter(c=>c!=="DE")];
   for(const c of cs){
-    const lo = c==="TR" ? 0 : -2, hi = c==="TR" ? 2 : 0;
+    const back = isBack(), lo = (c==="TR") !== back ? 0 : -2, hi = (c==="TR") !== back ? 2 : 0;
     const ph = (PUB[c]||[]).filter(([dt])=>{ const d=dayDiff(dt,dateStr); return d>=lo && d<=hi; });
     if(ph.length) out.push({c, kind:"pub", t: ph.map(([dt,n])=>`${trDate(dt)} ${n}`).join(", ")});
     for(const [cc,st,en,n] of LOCAL){ if(cc!==c) continue; const a=dayDiff(dateStr,st), b=dayDiff(en,dateStr); if(a>=-1 && b>=0) out.push({c, kind:"school", t:`Okullarda ${n} (${trDate(st)} – ${trDate(en)})`}); }
@@ -600,8 +657,17 @@ const store = {
 };
 
 // Kontroller
-FROM.forEach(c=>$("#fromList").append(new Option(c.n)));
-TO.forEach(c=>$("#toList").append(new Option(c.n)));
+// Yön: gidiş (Avrupa → Türkiye) veya dönüş (Türkiye → Avrupa)
+const isBack = () => store.get("dir","go")==="back";
+function fillLists(){
+  const [fl,tl] = isBack() ? [TO,FROM] : [FROM,TO];
+  $("#fromList").replaceChildren(...fl.map(c=>new Option(c.n)));
+  $("#toList").replaceChildren(...tl.map(c=>new Option(c.n)));
+  $("#from").placeholder = "Şehir veya adres, ör. "+(isBack()?"Ankara":"Köln");
+  $("#to").placeholder = "Şehir veya adres, ör. "+(isBack()?"Köln":"Ankara");
+  document.querySelector(`input[name=dir][value=${isBack()?"back":"go"}]`).checked = true;
+}
+fillLists();
 for(let h=0;h<24;h++) $("#hour").add(new Option(String(h).padStart(2,"0")+":00",h));
 const today = new Date();
 const defDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()+3);
@@ -614,20 +680,26 @@ let selRoute = store.get("route",null);
 
 function places(){
   const ft=$("#from").value.trim(), tt=$("#to").value.trim();
-  const f=findCity(FROM,ft), t=findCity(TO,tt);
+  const back=isBack(), f=findCity(back?TO:FROM,ft), t=findCity(back?FROM:TO,tt);
+  const EU0={la:48.14,lo:11.58}, TR0={la:41.01,lo:28.98};
+  const fPt=f||(back?TR0:EU0), tPt=t||(back?EU0:TR0);
   return { f, t, ft, tt, fName: f?f.n:ft, tName: t?t.n:tt, fMaps: ft, tMaps: tt,
-           fPt: f||{la:48.14,lo:11.58}, tPt: t||{la:41.01,lo:28.98} };
+           fPt, tPt, euPt: back?tPt:fPt, trPt: back?fPt:tPt };
 }
 function hints(){
   const P = places(), fh=$("#fromHint"), th=$("#toHint");
   fh.className="hint "+(P.f?"ok":P.ft?"warn":""); th.className="hint "+(P.t?"ok":P.tt?"warn":"");
-  fh.textContent = P.f ? "✓ "+P.f.n : P.ft ? "Listede yok; mesafe Münih'ten tahmin edilir" : "";
-  th.textContent = P.t ? "✓ "+P.t.n : P.tt ? "Listede yok; mesafe İstanbul'dan tahmin edilir" : "";
+  const [fd,td] = isBack() ? ["İstanbul","Münih"] : ["Münih","İstanbul"];
+  fh.textContent = P.f ? "✓ "+P.f.n : P.ft ? `Listede yok; mesafe ${fd}'dan tahmin edilir` : "";
+  th.textContent = P.t ? "✓ "+P.t.n : P.tt ? `Listede yok; mesafe ${td}'dan tahmin edilir` : "";
 }
 
 // Yoğunluk katsayısı (Türkiye yönü)
 const MONTH = [0.8,0.7,0.8,1.0,1.0,1.8,3.0,2.2,1.0,0.9,0.8,1.4];
 const DAY = [1.2,0.9,0.9,0.95,1.0,1.3,1.5]; // Pazar..Cumartesi
+// Dönüş yönü: ağustos sonu–eylül başı ve yılbaşı sonrası zirve; hafta sonu yoğun
+const MONTH_B = [1.3,0.7,0.8,1.0,1.0,0.9,1.0,2.6,2.2,1.0,0.9,0.8];
+const DAY_B = [1.4,0.9,0.9,0.95,1.0,1.2,1.4];
 function hourF(h){ return h<6?0.55 : h<10?0.9 : h<18?1.3 : h<22?1.1 : 0.8; }
 // Kullanıcı yola çıkış zamanını girer; sınıra varış her rota için mesafeden hesaplanır.
 let atTime = null; // bekleme tahmininin yapıldığı an (sınıra varış)
@@ -636,13 +708,15 @@ const addMin = (d,m) => new Date(d.getTime()+m*60000);
 function load(){
   const d = atTime || depTime();
   const b = busy(iso(d));
-  const f = MONTH[d.getMonth()] * DAY[d.getDay()] * hourF(d.getHours()) * (b?b.f:1);
+  const f = (isBack()?MONTH_B:MONTH)[d.getMonth()] * (isBack()?DAY_B:DAY)[d.getDay()] * hourF(d.getHours()) * (b?b.f:1);
   return isNaN(f)?1:f;
 }
 const obs = store.get("obs",{});
+const obsKey = id => (isBack()?"b:":"")+id;
 const estWait = id => Math.round(GATES[id].base*(1+(load()-1)*GATES[id].sens)/5)*5;
 function gateWait(id){
-  if(obs[id]!=null && obs[id]!=="") return {m:+obs[id], own:true};
+  const v = obs[obsKey(id)];
+  if(v!=null && v!=="") return {m:+v, own:true};
   return {m:estWait(id), own:false};
 }
 const fmtMin = m => m<60 ? m+" dk" : Math.floor(m/60)+" sa"+(m%60?" "+String(m%60).padStart(2,"0")+" dk":"");
@@ -650,20 +724,35 @@ const level = m => m<=45?"good":m<=120?"warn":"bad";
 const plate = c => `<span class="plate${C[c].eu?"":" noeu"}" title="${C[c].n}${C[c].eu?"":" – AB roaming yok"}">${C[c].p}</span>`;
 const fmtDT = d => d.toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"})+" "+String(d.getHours()).padStart(2,"0")+":00 civarı";
 const fmtDate = s => { const d=new Date(s+"T12:00:00"); return isNaN(d)?"":d.toLocaleDateString("tr-TR",{day:"numeric",month:"long",weekday:"long"}); };
-const mapsUrl = (P,r) => "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="+encodeURIComponent(P.fMaps)+"&destination="+encodeURIComponent(P.tMaps)+"&waypoints="+encodeURIComponent(r.mapsVia.join("|"));
+const viaList = r => isBack() ? r.via.slice().reverse().map(v=>v.replace("(feribot) ","")+(v.startsWith("(feribot)")?" (feribot)":"")) : r.via;
+const mapsUrl = (P,r) => "https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="+encodeURIComponent(P.fMaps)+"&destination="+encodeURIComponent(P.tMaps)+"&waypoints="+encodeURIComponent((isBack()?r.mapsVia.slice().reverse():r.mapsVia).join("|"));
+const T = { // yöne göre metinler
+  arr: () => isBack() ? "Türkiye'den çıkış (sınır)" : "Türkiye sınırına varış",
+  gate: () => isBack() ? "Türkiye çıkışı" : "Türkiye girişi",
+  rec: () => isBack() ? "Önerilen çıkış" : "Önerilen giriş",
+  euNet: () => isBack() ? "Türkiye sınırından sonra AB interneti" : "Türkiye'ye kadar AB interneti",
+};
 
 function computeRoutes(){
   const P = places();
   return ROUTES.map(r=>{
-    const startKm = hav(P.fPt, HUB[r.hub]) * ROAD;
-    const endKm = hav(r.entryPt||ENTRY_PT, P.tPt) * ROAD;
+    const startKm = hav(P.euPt, HUB[r.hub]) * ROAD;   // Avrupa ucu ↔ rota merkezi
+    const endKm = hav(r.entryPt||ENTRY_PT, P.trPt) * ROAD; // Türkiye kapısı ↔ Türkiye ucu
     const km = Math.round((r.km + startKm + endKm)/5)*5;
     const drive = km/85*60;
-    const toEntry = (r.km + startKm)/85*60 + r.ferry*60; // çıkıştan Türkiye sınırına (molalar hariç)
-    atTime = addMin(depTime(), toEntry);
-    const transit = r.borders.reduce((s,b)=>s+gateWait(b).m,0);
-    const arr = atTime = addMin(depTime(), toEntry + transit);
-    const entries = r.entry.map(e=>({id:e,...gateWait(e)})).sort((a,b)=>a.m-b.m);
+    let transit, arr, entries;
+    if(isBack()){
+      arr = atTime = addMin(depTime(), endKm/85*60); // Türkiye'den çıkış kapısına varış
+      entries = r.entry.map(e=>({id:e,...gateWait(e)})).sort((a,b)=>a.m-b.m);
+      atTime = addMin(arr, entries[0].m + r.km*0.5/85*60); // diğer sınırlar yolun ortalarında
+      transit = r.borders.reduce((s,b)=>s+gateWait(b).m,0);
+    } else {
+      const toEntry = (r.km + startKm)/85*60 + r.ferry*60; // çıkıştan Türkiye sınırına (molalar hariç)
+      atTime = addMin(depTime(), toEntry);
+      transit = r.borders.reduce((s,b)=>s+gateWait(b).m,0);
+      arr = atTime = addMin(depTime(), toEntry + transit);
+      entries = r.entry.map(e=>({id:e,...gateWait(e)})).sort((a,b)=>a.m-b.m);
+    }
     const best = entries[0];
     const total = drive + transit + best.m + r.ferry*60;
     return {r,km,drive,transit,best,entries,total,startKm,endKm,arr};
@@ -680,7 +769,7 @@ function renderRoutes(){
       <div class="stack" style="gap:6px;min-width:0">
         ${i===0?'<span class="chip good" style="align-self:flex-start">Önerilen</span>':""}
         <h3>${r.name}</h3>
-        <div class="plates">${r.countries.map(plate).join('<span class="arrow">›</span>')}</div>
+        <div class="plates">${(isBack()?r.countries.slice().reverse():r.countries).map(plate).join('<span class="arrow">›</span>')}</div>
       </div>
       <div class="meta">
         <span class="big">${fmtMin(Math.round(x.total/5)*5)}</span>
@@ -689,8 +778,8 @@ function renderRoutes(){
       <div class="body">
         <div class="chips">
           ${r.borders.length?`<span class="chip ${level(x.transit+x.best.m)}">Sınırlarda ≈ ${fmtMin(x.transit+x.best.m)}</span>`:`<span class="chip ${level(x.best.m)}">Sadece Türkiye sınırı ≈ ${fmtMin(x.best.m)}</span>`}
-          <span class="chip">Türkiye sınırına varış ≈ ${fmtDT(x.arr)}</span>
-          ${nonEU.length?`<span class="chip bad">${nonEU.join(", ")}'da AB interneti yok</span>`:`<span class="chip good">Türkiye'ye kadar AB interneti</span>`}
+          <span class="chip">${T.arr()} ≈ ${fmtDT(x.arr)}</span>
+          ${nonEU.length?`<span class="chip bad">${nonEU.join(", ")}'da AB interneti yok</span>`:`<span class="chip good">${T.euNet()}</span>`}
         </div>
         <div class="row"><button class="btn${i===0?"":" ghost"}" type="button" data-pick="${r.id}">Bu rotayı seç</button></div>
       </div>
@@ -702,16 +791,16 @@ function renderRoutes(){
 function renderPlan(){
   const list = computeRoutes();
   const x = list.find(v=>v.r.id===selRoute) || list[0];
-  const r = x.r; selRoute = r.id; atTime = x.arr;
+  const r = x.r; selRoute = r.id; atTime = x.arr; // not: dönüşte diğer sınırlar için kaba yaklaşım
   const arrDay = iso(x.arr);
   const P = places(), inR = c => r.countries.includes(c);
   const nonEU = r.countries.filter(c=>!C[c].eu && c!=="TR").map(c=>C[c].n);
   $("#planHead").innerHTML = `
     <div class="stephead"><div class="stack" style="gap:4px;min-width:0"><h2>${P.fName} → ${P.tName}</h2><p class="small muted">${r.name}</p></div>
       <div class="meta" style="text-align:right"><span class="big num" style="font-size:22px;font-weight:700">${fmtMin(Math.round(x.total/5)*5)}</span><span class="small muted num"> ≈ ${x.km.toLocaleString("tr-TR")} km</span></div></div>
-    <p class="small muted">${[P.fName,...r.via,P.tName].join(" → ")}</p>
-    <p class="small">Türkiye sınırına varış ≈ <b>${fmtDT(x.arr)}</b> <span class="muted">(molalar hariç; bekleme tahminleri bu saate göre)</span></p>
-    <div class="plates">${r.countries.map(plate).join('<span class="arrow">›</span>')}</div>
+    <p class="small muted">${[P.fName,...viaList(r),P.tName].join(" → ")}</p>
+    <p class="small">${T.arr()} ≈ <b>${fmtDT(x.arr)}</b> <span class="muted">(molalar hariç; bekleme tahminleri bu saate göre)</span></p>
+    <div class="plates">${(isBack()?r.countries.slice().reverse():r.countries).map(plate).join('<span class="arrow">›</span>')}</div>
     <ul class="clean small">${r.pros.concat(r.cons).map(t=>`<li>${t}</li>`).join("")}</ul>
     <div class="row"><a class="btn" href="${mapsUrl(P,r)}" target="_blank" rel="noopener">Google Haritalar'da aç</a>
       <a class="btn ghost" id="waShare" href="https://wa.me/" target="_blank" rel="noopener">WhatsApp'ta paylaş</a>
@@ -730,10 +819,11 @@ function renderPlan(){
 
   // Gümrük: yalnızca bu rotanın kapıları
   const entries = x.entries;
-  $("#sumGate").textContent = `Önerilen giriş: ${GATES[x.best.id].n} ≈ ${fmtMin(x.best.m)}`;
+  $("#sumGate").textContent = `${T.rec()}: ${GATES[x.best.id].n} ≈ ${fmtMin(x.best.m)}`;
   $("#gatesTR").innerHTML = entries.map((e,i)=>gateCard(e.id, i===0)).join("");
   $("#gatesTransitWrap").hidden = !r.borders.length;
-  $("#gatesTransit").innerHTML = r.borders.filter(b=>b!=="ruse").concat(r.borders.includes("ruse")?["ruse"]:[]).map(b=>gateCard(b,false)).join("");
+  atTime = addMin(x.arr, isBack() ? x.best.m + r.km*0.5/85*60 : -x.transit);
+  $("#gatesTransit").innerHTML = (isBack()?r.borders.slice().reverse():r.borders).filter(b=>b!=="ruse").concat(r.borders.includes("ruse")?["ruse"]:[]).map(b=>gateCard(b,false)).join("");
   $("#liveLinks").innerHTML = (r.borders.includes("horgos")?`, <a href="https://www.police.hu/hu/hirek-es-informaciok/hatarinfo" target="_blank" rel="noopener">Macaristan Határinfo</a>`:"")
     + (inR("RS")?`, <a href="https://www.amss.org.rs" target="_blank" rel="noopener">AMSS Sırbistan</a>`:"");
 
@@ -751,7 +841,7 @@ function renderPlan(){
     <td class="n">${s[5]}</td><td class="small">${s[6]}</td></tr>`).join("");
 
   // İnternet
-  $("#sumRoam").textContent = nonEU.length ? `${nonEU.join(", ")} ve Türkiye'de AB roaming yok` : "Türkiye'ye kadar AB roaming geçerli";
+  $("#sumRoam").textContent = nonEU.length ? `${nonEU.join(", ")} ve Türkiye'de AB roaming yok` : (isBack() ? "Türkiye sınırından sonra AB roaming geçerli" : "Türkiye'ye kadar AB roaming geçerli");
   $("#roamRows").innerHTML = ROAM.filter(v=>inR(v[0])).map(v=>`<tr><td>${plate(v[0])} ${C[v[0]].n}</td>
     <td><span class="chip ${v[1]?"good":"bad"}">${v[1]?"Geçerli":"Geçerli değil"}</span></td><td class="small">${v[2]}</td></tr>`).join("");
   $("#roamZones").innerHTML = ZONES.filter(z=>z.c.every(inR)).map(z=>`<article class="panel gate"><div class="head"><h3>${z.n}</h3><span class="chip ${z.lvl}">${z.lvl==="bad"?"Yüksek risk":"Dikkat"}</span></div><p class="small muted">${z.d}</p><p class="small">${z.t}</p></article>`).join("");
@@ -769,11 +859,11 @@ function planText(P,x){
   const lines = [
     `Sıla Yolu planı: ${P.fName} → ${P.tName}`,
     `Rota: ${r.name}`,
-    `Güzergâh: ${[P.fName,...r.via,P.tName].join(" → ")}`,
+    `Güzergâh: ${[P.fName,...viaList(r),P.tName].join(" → ")}`,
     `Süre ≈ ${fmtMin(Math.round(x.total/5)*5)}, ≈ ${x.km.toLocaleString("tr-TR")} km`,
     `Yola çıkış: ${fmtDate($("#date").value)}, ${$("#hour").selectedOptions[0].text}`,
-    `Türkiye sınırına varış ≈ ${fmtDT(x.arr)} (molalar hariç)`,
-    `Türkiye girişi: ${GATES[x.best.id].n} (tahmini bekleme ≈ ${fmtMin(x.best.m)})`,
+    `${T.arr()} ≈ ${fmtDT(x.arr)} (molalar hariç)`,
+    `${T.gate()}: ${GATES[x.best.id].n} (tahmini bekleme ≈ ${fmtMin(x.best.m)})`,
     `Ücretler: ${vig.join("; ")}`,
     lastStops.length ? `${ev?"Şarj":"Yakıt"} molaları: ${lastStops.join(", ")}` : "",
     `Acil: 112 · Konsolosluk Çağrı Merkezi +90 312 292 29 29`,
@@ -789,17 +879,18 @@ document.addEventListener("click",async e=>{
   catch(err){ const t=$("#planTextBox"); t.hidden=false; t.value=lastPlanText; t.focus(); t.select(); msg.textContent="Metni seçip kopyala"; }
 });
 function gateCard(id, recommended){
-  const g=GATES[id], w=gateWait(id), lv=level(w.m);
+  const g=GATES[id], w=gateWait(id), lv=level(w.m), back=isBack();
+  const o = back && !g.tr ? g.o.split(" → ").reverse().join(" → ") : g.o, t = back && g.tb ? g.tb : g.t;
   const pct=Math.min(100, w.m/300*100);
   return `<article class="panel gate">
     <div class="head"><h3>${g.n}</h3><span class="num" style="font-weight:700;color:var(--${lv})">${fmtMin(w.m)}</span></div>
     <div class="bar" aria-hidden="true"><i style="width:${pct}%;background:var(--${lv})"></i></div>
-    ${recommended?'<span class="chip good" style="align-self:flex-start">Önerilen giriş</span>':""}
-    <p class="small muted">${g.o}${g.city?" · "+g.city:""} · ${g.h}</p>
-    <p class="small">${g.t}</p>
+    ${recommended?`<span class="chip good" style="align-self:flex-start">${T.rec()}</span>`:""}
+    <p class="small muted">${o}${g.city?" · "+g.city:""} · ${g.h}</p>
+    <p class="small">${t}</p>
     <div class="row small">
       <label for="obs-${id}" style="flex-direction:row;align-items:center;gap:8px">Gözlem (dk)
-        <input id="obs-${id}" data-obs="${id}" type="number" min="0" step="5" style="max-width:90px" placeholder="${estWait(id)}" value="${obs[id]??""}">
+        <input id="obs-${id}" data-obs="${id}" type="number" min="0" step="5" style="max-width:90px" placeholder="${estWait(id)}" value="${obs[obsKey(id)]??""}">
       </label>
       <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(g.n.split(" /")[0]+" sınır kapısı")}" target="_blank" rel="noopener">Haritada gör</a>
     </div>
@@ -809,7 +900,7 @@ document.addEventListener("change",e=>{
   const id=e.target.dataset&&e.target.dataset.obs;
   if(!id) return;
   const v=e.target.value.trim();
-  if(v==="") delete obs[id]; else obs[id]=Math.max(0,+v);
+  if(v==="") delete obs[obsKey(id)]; else obs[obsKey(id)]=Math.max(0,+v);
   store.set("obs",obs); renderPlan();
 });
 
@@ -844,11 +935,20 @@ function renderFuel(r, inR, x){
     : `Dolu depoyla çıktığını, ${range} km menzil ile deponun dörtte biri kalmadan doldurduğunu varsayar.`;
   $("#evLinks").hidden = !ev;
   const P = places();
-  const pts = [{n:P.fName,q:P.fMaps,c:"DE",km:0},
-    ...STOPS[r.id].map(s=>({n:s[0],q:s[1],c:s[2],km:x.startKm+s[3]})),
-    {n:GATES[r.entry[0]].city||"Edirne",q:GATES[r.entry[0]].city||"Edirne",c:"TR",km:x.startKm+r.km+20},
-    {n:P.tName,q:P.tMaps,c:"TR",km:x.startKm+r.km+x.endKm}];
-  if(pts[pts.length-1].km < pts[pts.length-2].km) pts.splice(pts.length-2,1);
+  const edirne = GATES[r.entry[0]].city||"Edirne";
+  let pts;
+  if(isBack()){
+    pts = [{n:P.fName,q:P.fMaps,c:"TR",km:0},
+      ...(x.endKm>30 ? [{n:edirne,q:edirne,c:"TR",km:x.endKm-20}] : []),
+      ...STOPS[r.id].slice().reverse().map(s=>({n:s[0],q:s[1],c:s[2],km:x.endKm+r.km-s[3]})),
+      {n:P.tName,q:P.tMaps,c:"DE",km:x.endKm+r.km+x.startKm}];
+  } else {
+    pts = [{n:P.fName,q:P.fMaps,c:"DE",km:0},
+      ...STOPS[r.id].map(s=>({n:s[0],q:s[1],c:s[2],km:x.startKm+s[3]})),
+      {n:edirne,q:edirne,c:"TR",km:x.startKm+r.km+20},
+      {n:P.tName,q:P.tMaps,c:"TR",km:x.startKm+r.km+x.endKm}];
+    if(pts[pts.length-1].km < pts[pts.length-2].km) pts.splice(pts.length-2,1);
+  }
   let cost=0; for(let i=1;i<pts.length;i++) cost += (pts[i].km-pts[i-1].km)*cons/100*price(pts[i].c);
   const usable = ev ? range*0.7 : range*0.75, plan=[]; let last=0, cap = ev ? range*0.9 : usable;
   for(let i=1;i<pts.length-1;i++){
@@ -893,7 +993,9 @@ function renderChecklist(r){
     inList(r,"RS") ? "Sırbistan için kart veya biraz dinar" : null,
     "Reflektif yelek (her kişi için), üçgen, ilk yardım çantası",
     "Haritaları çevrimdışı indir, mobil veri ayarını kontrol et",
-    "Türkiye'de HGS etiketi almayı planla",
+    isBack() ? "HGS bakiyeni kontrol et (Türkiye'deki otoyol ve köprüler)" : "Türkiye'de HGS etiketi almayı planla",
+    isBack() ? "Türkiye'den AB'ye et ve süt ürünü (sucuk, pastırma, peynir vb.) getirmek yasak; sınırda el konur" : null,
+    isBack() ? "AB'ye girişte sigara ve alkol sınırları düşük (bazı kara sınırlarında 40 sigara); fazlasını beyan et" : null,
   ].filter(Boolean);
   $("#sumCheck").textContent = `${items.filter(t=>done[t]).length} / ${items.length}`;
   $("#checklist").innerHTML = items.map((c,i)=>`<label class="check" for="ck${i}"><input type="checkbox" id="ck${i}" data-ck="${c.replace(/"/g,"&quot;")}" ${done[c]?"checked":""}><span>${c}</span></label>`).join("");
@@ -909,7 +1011,13 @@ $("#fuel").value = store.get("fuel","b"); loadVeh();
 $("#fuel").addEventListener("change",()=>{ store.set("fuel",$("#fuel").value); loadVeh(); });
 ["range","cons"].forEach(id=>$("#"+id).addEventListener("change",()=>store.set(isEV()?id+"_e":id,$("#"+id).value)));
 ["from","to"].forEach(id=>$("#"+id).addEventListener("input",()=>{ store.set("loc_"+id,$("#"+id).value); hints(); }));
-function dateHint(){ const b=busy($("#date").value); $("#dateHint").className="hint"+(b?" busy":""); const all=busyAll($("#date").value).items; $("#dateHint").textContent = b ? "Yoğun dönem: "+all[0]+(all.length>1?` Ayrıca ${all.length-1} tatil başlangıcı daha var.`:"") : ""; }
+function dateHint(){ const b=busy($("#date").value); $("#dateHint").className="hint"+(b?" busy":""); const all=busyAll($("#date").value).items; $("#dateHint").textContent = b ? "Yoğun dönem: "+all[0]+(all.length>1?` Ayrıca ${all.length-1} yoğunluk nedeni daha var.`:"") : ""; }
+document.querySelectorAll("input[name=dir]").forEach(el=>el.addEventListener("change",()=>{
+  const f=$("#from").value, t=$("#to").value;
+  store.set("dir", el.value); fillLists();
+  $("#from").value=t; $("#to").value=f; store.set("loc_from",t); store.set("loc_to",f);
+  hints(); dateHint();
+}));
 ["date","hour"].forEach(id=>$("#"+id).addEventListener("change",()=>{ store.set(id==="hour"?"dephour":id,$("#"+id).value); dateHint(); }));
 
 // Adımlar
