@@ -9,10 +9,10 @@
     "HU": "05.10.2026",
     "IT": "05.10.2026",
     "RO": "05.10.2026",
-    "RS": "10.10.2026",
+    "RS": "12.10.2026",
     "SI": "05.10.2026",
     "SK": "05.10.2026",
-    "TR": "07.10.2026"
+    "TR": "11.10.2026"
   },
   "fuel": {
     "AT": [
@@ -64,10 +64,10 @@
       1.972
     ],
     "TR": [
-      1.534,
-      1.634
+      1.518,
+      1.75
     ]
   },
   "sources": "AB: fuel-prices.eu (AB Haftalık Akaryakıt Bülteni); RS: nafta.hr; TR: hisse.net İstanbul pompa fiyatı, TCMB EUR kuru",
-  "updated": "2026-10-12"
+  "updated": "2026-10-13"
 }
